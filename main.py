@@ -13,11 +13,12 @@ screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
 
 # imports from assets
+background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
 background = pygame.image.load(os.path.join("assets","Grey_full.png"))
 
 # player class 
 class player:
-    def __init__(self):
+    def __init__(self, health = 100):
         '''Create player rectangle and set it in the center'''
         self.sizex = 10
         self.sizey = 10
@@ -27,7 +28,7 @@ class player:
         self.rect = pygame.Rect(self.x - self.sizex // 2, self.y - self.sizey // 2, self.sizex, self.sizey) 
 
         '''Set player attributes'''
-        self.health = 100
+        self.health = health
 
 
     def move(self, direction, speed = 5):
@@ -43,7 +44,7 @@ class player:
                 enemy.rect.move_ip(0, -speed)
 # enemy class
 class enemy:
-    def __init__(self, distance = random.randrange(100,150)):
+    def __init__(self, damage = 1, health = 1, distance = random.randrange(100,150)):
         '''Creates enemy at a random point around the player'''
         self.sizex = 10
         self.sizey = 10
@@ -54,14 +55,19 @@ class enemy:
         self.rect = pygame.Rect(self.x, self.y, self.sizex, self.sizey)
         enemies.append(self)
 
+        '''Create enemy attributes'''
+        self.damage = damage
+        self.health = health
+
     def move(self, speed = 3):
         '''Moves the enemy towards the player at any given moment'''
         if self.rect.colliderect(player):
             if player.health > 0:
-                player.health += -1
-                print(player.health)
-            else:
-                print("You are dead")
+                player.health += -self.damage
+                # print(player.health)
+                if player.health <= 0:
+                    print("You are Dead")
+
             return
         for enemy in enemies:
             if self.rect.colliderect(enemy):
@@ -87,22 +93,52 @@ class enemy:
 
 # projectile class
 class projectile:
-    def __init__(self, size = 5):
+    def __init__(self, size = 5, speed = 2):
+        '''Creates projectile on player'''
         self.x, self.y = player.rect.topleft
         self.size = size
+        self.speed = speed
         self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
         projectiles.append(self)
+        self.targetx, self.targety = random.choice(enemies).rect.center
+
+        '''Calculate angle to move'''
+        self.x, self.y = self.rect.center
+        self.distancex = self.x - self.targetx 
+        self.distancey = self.y - self.targety 
+        try:
+            self.angle = math.atan(self.distancey / self.distancex)
+        # If self.distancex is 0, then the angle is pi/2 or -pi/2
+        except ZeroDivisionError:
+            if self.distancey > 0:
+                self.angle = -math.pi/2
+            elif self.distancey < 0:
+                self.angle = math.pi/2
+        self.movex = int(speed * math.cos(self.angle))
+        self.movey = int(speed * math.sin(self.angle))
+        
+
+    def move(self):
+        '''Moves projectile'''
+        if self.rect.collidelist(enemies):
+            print("Removed projectile")
+            se
+            # projectiles.remove(self)
+            # self = projectile()
+        self.rect.move_ip(self.movex, self.movey)
+        
 
 player = player()
-projectiles = []
-p1 = projectile()
-p2 = projectile()
-p3 = projectile()
 enemies = []
 e1 = enemy()
 e2 = enemy()
 e3 = enemy()
 e4 = enemy()
+projectiles = []
+p1 = projectile()
+p2 = projectile()
+p3 = projectile()
+
 
 
 #clock
@@ -135,5 +171,6 @@ while running:
         enemy.move()
         pygame.draw.rect(screen, (255, 0, 0), enemy)
     for projectile in projectiles:
+        projectile.move()
         pygame.draw.rect(screen, (0, 0, 255), projectile)
     pygame.display.update()
