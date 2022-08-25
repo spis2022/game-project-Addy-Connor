@@ -93,11 +93,12 @@ class enemy:
 
 # projectile class
 class projectile:
-    def __init__(self, size = 5, speed = 2):
+    def __init__(self, size = 5, speed = 2, damage = 10):
         '''Creates projectile on player'''
         self.x, self.y = player.rect.topleft
         self.size = size
         self.speed = speed
+        self.damage = damage
         self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
         projectiles.append(self)
         self.targetx, self.targety = random.choice(enemies).rect.center
@@ -120,9 +121,20 @@ class projectile:
 
     def move(self):
         '''Moves projectile'''
-        if self.rect.collidelist(enemies):
-            print("Removed projectile")
-            se
+        for enemy in enemies:
+            if self.rect.colliderect(enemy):
+                print("Removed projectile")
+                self.rect.clamp_ip(player.rect)
+                enemy.health += -self.damage
+                print(f'Enemy %s took { self.damage } damage. It has { enemy.health } health left' %)
+
+        self.x, self.y = self.rect.center
+        if self.x > screen_length or self.x < 0:
+            self.rect.clamp_ip(player.rect)
+            print("Hit edge")
+        if self.y > screen_height or self.y < 0:
+            self.rect.clamp_ip(player.rect)
+            print("Hit top/bottom")
             # projectiles.remove(self)
             # self = projectile()
         self.rect.move_ip(self.movex, self.movey)
