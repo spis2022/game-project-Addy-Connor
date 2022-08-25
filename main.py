@@ -25,9 +25,13 @@ class player:
         self.y = centery
         # keep player centered
         self.rect = pygame.Rect(self.x - self.sizex // 2, self.y - self.sizey // 2, self.sizex, self.sizey) 
-        # print(self.rect.center)
+
+        '''Set player attributes'''
+        self.health = 100
+
 
     def move(self, direction, speed = 5):
+        '''Moves enemies in a way that looks like the player is moving'''
         for enemy in enemies:
             if direction == "left":
                 enemy.rect.move_ip(speed, 0)
@@ -40,7 +44,7 @@ class player:
 # enemy class
 class enemy:
     def __init__(self, distance = random.randrange(100,150)):
-        '''Creates enemy at a random'''
+        '''Creates enemy at a random point around the player'''
         self.sizex = 10
         self.sizey = 10
         self.angle = random.random() * (math.pi*2)
@@ -51,23 +55,29 @@ class enemy:
         enemies.append(self)
 
     def move(self, speed = 3):
-        if self.rect.colliderect(player.rect):
+        '''Moves the enemy towards the player at any given moment'''
+        if self.rect.colliderect(player):
+            if player.health > 0:
+                player.health += -1
+                print(player.health)
+            else:
+                print("You are dead")
             return
         for enemy in enemies:
             if self.rect.colliderect(enemy):
-                self.rect.move_ip(0, 10)
-                enemy.rect.move_ip(0, -10)
+                self.rect.move_ip(5, 5)
+                enemy.rect.move_ip(-5, -5)
         self.x, self.y = self.rect.center
-        # print(self.x, self.y)
         self.distancex = self.x - player.x 
         self.distancey = self.y - player.y 
         try:
             self.angle = math.atan(self.distancey / self.distancex)
+        # If self.distancex is 0, then the angle is pi/2 or -pi/2
         except ZeroDivisionError:
             if self.distancey > 0:
-                self.angle = math.pi/2
-            elif self.distancey < 0:
                 self.angle = -math.pi/2
+            elif self.distancey < 0:
+                self.angle = math.pi/2
         self.movex = int(speed * math.cos(self.angle))
         self.movey = int(speed * math.sin(self.angle))
         if self.x > player.x:
@@ -75,13 +85,19 @@ class enemy:
             self.movey = -self.movey
         self.rect.move_ip(self.movex, self.movey)
 
-
-# if enemy xpos > centerx, take distance - speed to bring it to center
-# if enemy xpos < centerx, take distance + speed to bring it to center
-
 # projectile class
+class projectile:
+    def __init__(self, size = 5):
+        self.x, self.y = player.rect.topleft
+        self.size = size
+        self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
+        projectiles.append(self)
 
 player = player()
+projectiles = []
+p1 = projectile()
+p2 = projectile()
+p3 = projectile()
 enemies = []
 e1 = enemy()
 e2 = enemy()
@@ -118,4 +134,6 @@ while running:
     for enemy in enemies:
         enemy.move()
         pygame.draw.rect(screen, (255, 0, 0), enemy)
+    for projectile in projectiles:
+        pygame.draw.rect(screen, (0, 0, 255), projectile)
     pygame.display.update()
