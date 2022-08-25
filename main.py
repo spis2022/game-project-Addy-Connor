@@ -4,6 +4,7 @@ import pygame
 import os
 import random
 import math
+import time
 
 # Set screen dimensions
 screen_length = 300
@@ -36,15 +37,24 @@ class player:
         for enemy in enemies:
             if direction == "left":
                 enemy.rect.move_ip(speed, 0)
-            elif direction == "right":
+            if direction == "right":
                 enemy.rect.move_ip(-speed, 0)
-            elif direction == "up":
+            if direction == "up":
                 enemy.rect.move_ip(0, speed)
-            elif direction == "down":
+            if direction == "down":
                 enemy.rect.move_ip(0, -speed)
+        for projectile in projectiles:
+            if direction == "left":
+                projectile.rect.move_ip(speed, 0)
+            if direction == "right":
+                projectile.rect.move_ip(-speed, 0)
+            if direction == "up":
+                projectile.rect.move_ip(0, speed)
+            if direction == "down":
+                projectile.rect.move_ip(0, -speed)
 # enemy class
 class enemy:
-    def __init__(self, damage = 1, health = 1, distance = random.randrange(100,150)):
+    def __init__(self, name, damage = 1, health = 100, speed = 2, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
         self.sizex = 10
         self.sizey = 10
@@ -56,10 +66,12 @@ class enemy:
         enemies.append(self)
 
         '''Create enemy attributes'''
+        self.name = name
         self.damage = damage
         self.health = health
+        self.speed = speed
 
-    def move(self, speed = 3):
+    def move(self):
         '''Moves the enemy towards the player at any given moment'''
         if self.rect.colliderect(player):
             if player.health > 0:
@@ -67,6 +79,7 @@ class enemy:
                 # print(player.health)
                 if player.health <= 0:
                     print("You are Dead")
+                    time.sleep(1000000)
 
             return
         for enemy in enemies:
@@ -84,8 +97,8 @@ class enemy:
                 self.angle = -math.pi/2
             elif self.distancey < 0:
                 self.angle = math.pi/2
-        self.movex = int(speed * math.cos(self.angle))
-        self.movey = int(speed * math.sin(self.angle))
+        self.movex = int(self.speed * math.cos(self.angle))
+        self.movey = int(self.speed * math.sin(self.angle))
         if self.x > player.x:
             self.movex = -self.movex
             self.movey = -self.movey
@@ -101,51 +114,56 @@ class projectile:
         self.damage = damage
         self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
         projectiles.append(self)
-        self.targetx, self.targety = random.choice(enemies).rect.center
-
-        '''Calculate angle to move'''
-        self.x, self.y = self.rect.center
-        self.distancex = self.x - self.targetx 
-        self.distancey = self.y - self.targety 
         try:
-            self.angle = math.atan(self.distancey / self.distancex)
-        # If self.distancex is 0, then the angle is pi/2 or -pi/2
-        except ZeroDivisionError:
-            if self.distancey > 0:
-                self.angle = -math.pi/2
-            elif self.distancey < 0:
-                self.angle = math.pi/2
-        self.movex = int(speed * math.cos(self.angle))
-        self.movey = int(speed * math.sin(self.angle))
-        
+            self.targetx, self.targety = random.choice(enemies).rect.center
+
+            '''Calculate angle to move'''
+            self.x, self.y = self.rect.center
+            self.distancex = self.x - self.targetx 
+            self.distancey = self.y - self.targety 
+            try:
+                self.angle = math.atan(self.distancey / self.distancex)
+            # If self.distancex is 0, then the angle is pi/2 or -pi/2
+            except ZeroDivisionError:
+                if self.distancey > 0:
+                    self.angle = -math.pi/2
+                elif self.distancey < 0:
+                    self.angle = math.pi/2
+            self.movex = int(speed * math.cos(self.angle))
+            self.movey = int(speed * math.sin(self.angle))
+        except:
+            print("You win")
+            time.sleep(100000)
+            
 
     def move(self):
         '''Moves projectile'''
         for enemy in enemies:
             if self.rect.colliderect(enemy):
                 print("Removed projectile")
-                self.rect.clamp_ip(player.rect)
+                self.__init__()
                 enemy.health += -self.damage
-                print(f'Enemy %s took { self.damage } damage. It has { enemy.health } health left' %)
+                print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
+                if enemy.health <= 0:
+                    print(f'Enemy { enemy.name } has died')
+                    enemies.remove(enemy)
 
         self.x, self.y = self.rect.center
         if self.x > screen_length or self.x < 0:
-            self.rect.clamp_ip(player.rect)
+            self.__init__()
             print("Hit edge")
         if self.y > screen_height or self.y < 0:
-            self.rect.clamp_ip(player.rect)
+            self.__init__()
             print("Hit top/bottom")
-            # projectiles.remove(self)
-            # self = projectile()
         self.rect.move_ip(self.movex, self.movey)
         
 
 player = player()
 enemies = []
-e1 = enemy()
-e2 = enemy()
-e3 = enemy()
-e4 = enemy()
+e1 = enemy(1)
+e2 = enemy(2)
+e3 = enemy(3)
+e4 = enemy(4)
 projectiles = []
 p1 = projectile()
 p2 = projectile()
