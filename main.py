@@ -21,15 +21,25 @@ class player:
         '''Create player rectangle and set it in the center'''
         self.sizex = 10
         self.sizey = 10
-        self.x = centerx - self.sizex // 2
-        self.y = centery - self.sizey // 2
+        self.x = centerx
+        self.y = centery
         # keep player centered
-        self.rect = pygame.Rect(self.x, self.y, self.sizex, self.sizey) 
+        self.rect = pygame.Rect(self.x - self.sizex // 2, self.y - self.sizey // 2, self.sizex, self.sizey) 
+        # print(self.rect.center)
 
-    
+    def move(self, direction, speed = 5):
+        for enemy in enemies:
+            if direction == "left":
+                enemy.rect.move_ip(speed, 0)
+            elif direction == "right":
+                enemy.rect.move_ip(-speed, 0)
+            elif direction == "up":
+                enemy.rect.move_ip(0, speed)
+            elif direction == "down":
+                enemy.rect.move_ip(0, -speed)
 # enemy class
 class enemy:
-    def __init__(self, distance):
+    def __init__(self, distance = random.randrange(100,150)):
         '''Creates enemy at a random'''
         self.sizex = 10
         self.sizey = 10
@@ -43,19 +53,26 @@ class enemy:
     def move(self, speed = 3):
         if self.rect.colliderect(player.rect):
             return
+        for enemy in enemies:
+            if self.rect.colliderect(enemy):
+                self.rect.move_ip(0, 10)
+                enemy.rect.move_ip(0, -10)
+        self.x, self.y = self.rect.center
+        # print(self.x, self.y)
         self.distancex = self.x - player.x 
         self.distancey = self.y - player.y 
-        self.angle = math.atan(self.distancex / self.distancey)
-        # if self.distancey >= centery:
-        #     self.angle = self.angle + math.pi
-        print(self.angle*180/math.pi)
-        self.movex = speed * math.sin(self.angle)
-        self.movey = speed * math.cos(self.angle)
-        if self.y > player.y:
+        try:
+            self.angle = math.atan(self.distancey / self.distancex)
+        except ZeroDivisionError:
+            if self.distancey > 0:
+                self.angle = math.pi/2
+            elif self.distancey < 0:
+                self.angle = -math.pi/2
+        self.movex = int(speed * math.cos(self.angle))
+        self.movey = int(speed * math.sin(self.angle))
+        if self.x > player.x:
             self.movex = -self.movex
             self.movey = -self.movey
-        self.x = self.x + self.movex
-        self.y = self.y + self.movey
         self.rect.move_ip(self.movex, self.movey)
 
 
@@ -66,7 +83,11 @@ class enemy:
 
 player = player()
 enemies = []
-e1 = enemy(random.randrange(100, 150))
+e1 = enemy()
+e2 = enemy()
+e3 = enemy()
+e4 = enemy()
+
 
 #clock
 clock = pygame.time.Clock()
@@ -76,14 +97,25 @@ running = True
 while running:
     clock.tick(FPS)
     for event in pygame.event.get():
+        keys = pygame.key.get_pressed()
     
+        if keys[pygame.K_w]:
+            player.move("up")
+        if keys[pygame.K_a]:
+            player.move("left")
+        if keys[pygame.K_s]:
+            player.move("down")
+        if keys[pygame.K_d]:
+            player.move("right")
     # Quit game
         if event.type == pygame.KEYDOWN: 
             if event.key == pygame.K_q:
                 running = False
 
-    e1.move()
+
     screen.blit(background,(0,0))
-    pygame.draw.rect(screen, (255, 0, 0), player.rect)
-    pygame.draw.rect(screen, (250,20,20), e1.rect)
+    pygame.draw.rect(screen, (0, 255, 0), player.rect)
+    for enemy in enemies:
+        enemy.move()
+        pygame.draw.rect(screen, (255, 0, 0), enemy)
     pygame.display.update()
