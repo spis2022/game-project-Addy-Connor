@@ -4,7 +4,7 @@ import pygame
 import os
 import random
 import math
-import time
+
 
 # Set screen dimensions
 screen_length = 300
@@ -14,8 +14,65 @@ screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
 
 # imports from assets
-background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
-background = pygame.image.load(os.path.join("assets","Grey_full.png"))
+# background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
+background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
+
+# background
+class background:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 300, 300)
+        self.x = x
+        self.y = y
+
+# top third
+bg1 = background(-300, -300)
+bg2 = background(0, -300)
+bg3 = background(300, -300)
+# middle third
+bg4 = background(-300, 0)
+bg5 = background(0, 0)
+bg6 = background(300, 0)
+# bottom third
+bg7 = background(-300, 300)
+bg8 = background(0, 300)
+bg9 = background(300, 300)
+
+background_array = [[bg1, bg2, bg3],
+                   [bg4, bg5, bg6],
+                   [bg7, bg8, bg9]]
+
+def update_background():
+    # Checks right edge
+    if background_array[0][2].rect.right < screen_length:
+        for i in range(len(background_array)):
+            for image in background_array[i][0]:
+                background_array[i].pop(0)
+                background_array[i].append(image)
+                image.x += 600
+    # Checks left edge
+    if background_array[0][0].rect.left > 0:
+        for i in enumerate(background_array):
+            for image in background_array[i][2]:
+                background_array[i].pop(2)
+                background_array[i].insert(0, image)
+                image.x += -600
+    # Checks top edge
+    if background_array[0][0].rect.top > 0:
+        for list in background_array:
+            background_array.pop(2)
+            background_array.insert(0, list)
+            for image in list:
+                image.y += 600   
+    # Checks bottom edge
+    if background_array[2][0].rect.bottom < screen_height:
+        for list in background_array:
+            background_array.pop(0)
+            background_array.append(list)
+            for image in list:
+                image.y += -600
+                
+                
+
 
 # player class 
 class player:
@@ -52,8 +109,26 @@ class player:
                 projectile.rect.move_ip(0, speed)
             if direction == "down":
                 projectile.rect.move_ip(0, -speed)
+        for list in background_array:
+            for image in list:
+                if direction == "left":
+                    image.rect.move_ip(speed, 0)
+                    image.x += speed
+                if direction == "right":
+                    image.rect.move_ip(-speed, 0)
+                    image.x += -speed
+                if direction == "up":
+                    image.rect.move_ip(0, speed)
+                    image.y += speed
+                if direction == "down":
+                    image.rect.move_ip(0, -speed)
+                    image.y += -speed
+
 # enemy class
 class enemy:
+    # def __init__(self):
+    #     possible_enemies.append(self)
+    
     def __init__(self, name, damage = 1, health = 100, speed = 2, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
         self.sizex = 10
@@ -76,10 +151,11 @@ class enemy:
         if self.rect.colliderect(player):
             if player.health > 0:
                 player.health += -self.damage
-                # print(player.health)
+                print(player.health)
                 if player.health <= 0:
                     print("You are Dead")
-                    time.sleep(1000000)
+                    global running
+                    running = False
 
             return
         for enemy in enemies:
@@ -133,7 +209,8 @@ class projectile:
             self.movey = int(speed * math.sin(self.angle))
         except:
             print("You win")
-            time.sleep(100000)
+            global running
+            running = False
             
 
     def move(self):
@@ -157,13 +234,18 @@ class projectile:
             print("Hit top/bottom")
         self.rect.move_ip(self.movex, self.movey)
         
+# experience
 
 player = player()
+possible_enemies = []
 enemies = []
 e1 = enemy(1)
 e2 = enemy(2)
 e3 = enemy(3)
 e4 = enemy(4)
+# for enemy in enemies:
+#     enemy.generate()
+possible_projectiles = []
 projectiles = []
 p1 = projectile()
 p2 = projectile()
@@ -193,9 +275,11 @@ while running:
         if event.type == pygame.KEYDOWN: 
             if event.key == pygame.K_q:
                 running = False
-
-
-    screen.blit(background,(0,0))
+                
+    update_background()
+    for list in background_array:
+        for image in list:
+            screen.blit(background_image, (image.x, image.y))
     pygame.draw.rect(screen, (0, 255, 0), player.rect)
     for enemy in enemies:
         enemy.move()
