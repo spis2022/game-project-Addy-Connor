@@ -22,8 +22,8 @@ class background:
         self.y = y
 
 image_width, image_height = background_image.get_rect().size
-print(image_width)
-print(image_height)
+# print(image_width)
+# print(image_height)
 
 # screen_length = 2 * image_width
 # screen_height = 2 * image_height
@@ -93,7 +93,7 @@ def update_background():
 
 # player class 
 class player:
-    def __init__(self, health = 100):
+    def __init__(self, health = 100, exp = 0, pickup_range = 20):
         '''Create player rectangle and set it in the center'''
         self.sizex = 10
         self.sizey = 10
@@ -104,6 +104,8 @@ class player:
 
         '''Set player attributes'''
         self.health = health
+        self.exp = exp
+        self.pickup_range = pickup_range
 
 
     def move(self, direction, speed = 5):
@@ -144,6 +146,18 @@ class player:
                     projectile.rect.move_ip(0, speed)
                 if direction == "down":
                     projectile.rect.move_ip(0, -speed)
+        except:
+            pass
+        try:
+            for xp in experience:
+                if direction == "left":
+                    xp.rect.move_ip(speed, 0)
+                if direction == "right":
+                    xp.rect.move_ip(-speed, 0)
+                if direction == "up":
+                    xp.rect.move_ip(0, speed)
+                if direction == "down":
+                    xp.rect.move_ip(0, -speed)
         except:
             pass
 
@@ -211,7 +225,7 @@ def spawn_enemy():
 class projectile:
     def __init__(self, size = 5, speed = 10, damage = 10):
         '''Creates projectile on player'''
-        if len(enemies) > 0:
+        try:
             self.x, self.y = player.rect.topleft
             self.size = size
             self.speed = speed
@@ -235,11 +249,12 @@ class projectile:
                     self.angle = math.pi/2
             self.movex = int(speed * math.cos(self.angle))
             self.movey = int(speed * math.sin(self.angle))
-        else:
-                # print("You win")
-                # global running
-                # running = False
-            projectile.remove(self)
+            if self.x > self.targetx:
+                self.movex = -self.movex
+                self.movey = -self.movey
+        except:
+            if self in projectiles:
+                projectiles.remove(self)
             
 
     def move(self):
@@ -252,7 +267,7 @@ class projectile:
                     enemy.health += -self.damage
                     # print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
                     if enemy.health <= 0:
-                        # print(f'Enemy { enemy.name } has died')
+                        experience.append(exp(self.x, self.y))
                         enemies.remove(enemy)
         except:
             pass
@@ -267,21 +282,53 @@ class projectile:
         self.rect.move_ip(self.movex, self.movey)
         
 # experience
+class exp:
+    def __init__(self, locationx, locationy, value = 1, size = 4):
+        self.rect = pygame.Rect(locationx, locationy, size, size)
+        self.value = value
+        self.x = locationx
+        self.y = locationy
+        
+    def check_pickup(self):
+        if self.rect.colliderect(player):
+            player.exp += self.value
+            print(f'You have {player.exp} exp')
+            experience.remove(self)
+            return True
+
+    def pickup_range(self):
+        self.x, self.y = self.rect.center
+        distancex = self.x - player.x 
+        distancey = self.y - player.y 
+        distance = math.sqrt(distancex ** 2 + distancey ** 2)
+        if distance < player.pickup_range:
+            move_dist = (player.pickup_range / distance) + 1
+            if move_dist > distance:
+                move_dist = distance
+            try:
+                self.angle = math.atan(self.distancey / self.distancex)
+            # If self.distancex is 0, then the angle is pi/2 or -pi/2
+            except ZeroDivisionError:
+                if distancey > 0:
+                    angle = -math.pi/2
+                elif distancey < 0:
+                    angle = math.pi/2
+            movex = int(move_dist * math.cos(angle))
+            movey = int(move_dist * math.sin(angle))
+            if self.x > player.x:
+                movex = -movex
+                movey = -movey
+            self.rect.move_ip(movex, movey)
+            
+            self.check_pickup
+        else:
+            return
 
 player = player()
-# possible_enemies = []
 enemies = []
 enemies.append(enemy())
-# print(enemies)
-# # # for enemy in enemies:
-# #     enemy.generate()
-# possible_projectiles = []
 projectiles = []
-# projectiles.append(projectile())
-# p1 = projectile()
-# p2 = projectile()
-# p3 = projectile()
-
+experience = []
 
 
 #clock
@@ -295,6 +342,7 @@ enemy_time = pygame.time.get_ticks()
 projectile_time = pygame.time.get_ticks()
 spawn_rate = 5000
 fire_rate = 1000
+multi_shot = 2
 
 while running:
     clock.tick(FPS)
@@ -316,14 +364,17 @@ while running:
             if event.key == pygame.K_q:
                 running = False
                 
-    # print(enemies)
+    # Spawns enemies
     if (current_time - enemy_time > spawn_rate):
         spawn_enemy()
         enemy_time = pygame.time.get_ticks()
+
+    # Fires projectiles
     if (current_time - projectile_time > fire_rate):
-        projectiles.append(projectile())
+        for i in range(multi_shot):
+            projectiles.append(projectile())
         projectile_time = pygame.time.get_ticks()
-    print(projectiles)
+    # print(projectiles)
 
     update_background()
     for list in background_array:
@@ -341,6 +392,14 @@ while running:
         for p in projectiles:
             p.move()
             pygame.draw.rect(screen, (0, 0, 255), p)
+    except:
+        pass
+    try:
+        for xp in experience:
+            collected = xp.check_pickup()
+            if not collected:
+                xp.pickup_range()
+            pygame.draw.rect(screen, (0, 100, 200), xp)
     except:
         pass
     pygame.display.update()
