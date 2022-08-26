@@ -306,7 +306,7 @@ class exp:
             if move_dist > distance:
                 move_dist = distance
             try:
-                self.angle = math.atan(self.distancey / self.distancex)
+                angle = math.atan(distancey / distancex)
             # If self.distancex is 0, then the angle is pi/2 or -pi/2
             except ZeroDivisionError:
                 if distancey > 0:
