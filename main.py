@@ -9,7 +9,7 @@ pygame.init()
 
 
 '''Imports from assets'''
-# background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
+
 background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
 enemy_image = pygame.image.load(os.path.join("assets", "enemy.png"))
 
@@ -32,6 +32,12 @@ dim_field = (screen_length, screen_height)
 screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
 
+# Makes transparent background surface
+background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
+trans_surface = pygame.Surface((screen_length, screen_height), pygame.SRCALPHA)
+pygame.draw.rect(trans_surface, (255, 255, 255, 0), background_rect)
+
+# Creates background array for infinite mapping
 num_of_background_columns = math.ceil(screen_length / image_width) + 1
 num_of_background_rows = math.ceil(screen_height / image_height) + 1
 
@@ -51,22 +57,6 @@ for row in range(num_of_background_rows):
 last_row = num_of_background_rows - 1
 last_column = num_of_background_columns - 1
 
-# # top third
-# bg1 = background(-image_width, -image_height)
-# bg2 = background(0, -image_height)
-# bg3 = background(image_width, -image_height)
-# # middle third
-# bg4 = background(-image_width, 0)
-# bg5 = background(0, 0)
-# bg6 = background(image_width, 0)
-# # bottom third
-# bg7 = background(-image_width, image_height)
-# bg8 = background(0, image_height)
-# bg9 = background(image_width, image_height)
-
-# background_array = [[bg1, bg2, bg3],
-#                    [bg4, bg5, bg6],
-#                    [bg7, bg8, bg9]]
 
 def update_background():
     
@@ -344,9 +334,7 @@ class aura(weapon):
         self.size = 40
         self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
         self.cd = 1000
-        self.surface = pygame.Surface((screen_length, screen_height), pygame.SRCALPHA)
-        self.rect = pygame.Rect(0, 0, screen_length, screen_height)
-        pygame.draw.rect(self.surface, (255, 255, 255, 0), self.rect)
+        
         
 
 
@@ -559,8 +547,9 @@ while running:
     update_background()
     draw_background()
     
-    draw_experience()
+    
     a.use_weapon()
+    draw_experience()
     draw_player()
     update_enemies()
     # draw_projectiles()
