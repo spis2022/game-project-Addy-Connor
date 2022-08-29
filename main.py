@@ -33,8 +33,8 @@ screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
 
 # Makes transparent background surface
-background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
-trans_surface = pygame.Surface((0, 0), pygame.SRCALPHA)
+background_rect = pygame.Rect(0, 0, screen_length, screen_height)
+trans_surface = pygame.Surface((screen_length, screen_height), pygame.SRCALPHA)
 pygame.draw.rect(trans_surface, (255, 255, 255, 0), background_rect)
 
 # Creates background array for infinite mapping
