@@ -156,7 +156,7 @@ class player:
 
         '''Health Bar'''       
         self.health_bar_sizex = self.sizex * 2
-        self.health_bar_sizey = 5
+        self.health_bar_sizey = 3
         self.health_bar_x = centerx - (self.health_bar_sizex // 2)
         self.health_bar_y = centery - 12
         self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
@@ -304,17 +304,22 @@ class enemy:
             self.movey = -self.movey
         self.rect.move_ip(self.movex, self.movey)
 
+    def check_health(self):
+        if self.health <= 0:
+            enemies.remove(self)
+            experience.append(exp(self.x, self.y))
+
 def spawn_enemy():
     global number_of_enemies
     for i in range(number_of_enemies):
         enemies.append(enemy())
     number_of_enemies += 1
 
-def draw_enemies():
+def update_enemies():
     try:
         for e in enemies:
             e.move()
-            # pygame.draw.rect(screen, (255, 0, 0), e)
+            e.check_health()
             screen.blit(enemy_image, (e.rect.topleft))
     except:
         pass
@@ -330,14 +335,33 @@ class weapon:
         self.name = name
         self.damage = damage
         self.level = level
+        self.previous_time = pygame.time.get_ticks()
 
 'Weapon - Aura'
 class aura(weapon):
     def __init__(self):
-        super.__init__("Aura", 1, 1)
-        self.size = 20
-        self.circle = pygame.Circle()
-    
+        super().__init__("Aura", 20, 1)
+        self.size = 40
+        self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
+        self.cd = 1000
+        self.surface = pygame.Surface((screen_length, screen_height), pygame.SRCALPHA)
+        self.rect = pygame.Rect(0, 0, screen_length, screen_height)
+        pygame.draw.rect(self.surface, (0, 0, 0, 0), self.rect)
+        
+
+
+    def use_weapon(self):
+        # screen.fill((150, 50, 50, 60), pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size), pygame.SRCALPHA)
+        pygame.draw.circle(self.surface, (150, 0, 50, 25), (centerx, centery), self.size)
+        screen.blit(self.surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        if current_time - self.previous_time >= self.cd:
+            self.previous_time = pygame.time.get_ticks()
+            targets = self.circle.collidelistall(enemies)
+            try:
+                for target in targets:
+                    enemies[target].health += -self.damage
+            except:
+                pass
 
 
 '''Projectile - Fireball'''
@@ -385,9 +409,9 @@ class projectile(weapon):
                     projectiles.remove(self)
                     enemy.health += -self.damage
                     # print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
-                    if enemy.health <= 0:
-                        experience.append(exp(self.x, self.y))
-                        enemies.remove(enemy)
+                    # if enemy.health <= 0:
+                    #     experience.append(exp(self.x, self.y))
+                    #     enemies.remove(enemy)
         except:
             pass
 
@@ -491,6 +515,7 @@ blue = (0,0,255)
 font = pygame.font.SysFont('timesnewroman', 16)
 game_time = make_time()
 
+a = aura()
 
 while running:
     clock.tick(FPS)
@@ -518,10 +543,10 @@ while running:
         enemy_time = pygame.time.get_ticks()
 
     # Fires projectiles
-    if (current_time - projectile_time >= fire_rate):
-        for i in range(multi_shot):
-            projectiles.append(projectile())
-        projectile_time = pygame.time.get_ticks()
+    # if (current_time - projectile_time >= fire_rate):
+    #     for i in range(multi_shot):
+    #         projectiles.append(projectile())
+    #     projectile_time = pygame.time.get_ticks()
     # print(projectiles)
 
     # Updates game time
@@ -535,9 +560,10 @@ while running:
     draw_background()
     
     draw_experience()
+    a.use_weapon()
     draw_player()
-    draw_enemies()
-    draw_projectiles()
+    update_enemies()
+    # draw_projectiles()
     draw_time()
     
     pygame.display.update()
