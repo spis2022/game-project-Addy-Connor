@@ -34,7 +34,7 @@ screen = pygame.display.set_mode(dim_field)
 
 # Makes transparent background surface
 background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
-trans_surface = pygame.Surface((screen_length, screen_height), pygame.SRCALPHA)
+trans_surface = pygame.Surface((0, 0), pygame.SRCALPHA)
 pygame.draw.rect(trans_surface, (255, 255, 255, 0), background_rect)
 
 # Creates background array for infinite mapping
@@ -334,14 +334,12 @@ class aura(weapon):
         self.size = 40
         self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
         self.cd = 1000
-        
-        
-
 
     def use_weapon(self):
         # screen.fill((150, 50, 50, 60), pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size), pygame.SRCALPHA)
         pygame.draw.circle(trans_surface, (150, 0, 50, 25), (centerx, centery), self.size)
         screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        # pygame.draw.circle(screen, (255, 255, 255), self.circle)
         if current_time - self.previous_time >= self.cd:
             self.previous_time = pygame.time.get_ticks()
             targets = self.circle.collidelistall(enemies)
