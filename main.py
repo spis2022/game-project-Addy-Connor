@@ -37,12 +37,16 @@ num_of_background_rows = math.ceil(screen_height / image_height) + 1
 
 background_array = []
 
+# Creating background array but blank
 for row in range(num_of_background_rows):
     background_array.append([])
+    for column in range(num_of_background_columns):
+        background_array[row].append("")
 
+# Filling background array with background values
 for row in range(num_of_background_rows):
     for column in range(num_of_background_columns):
-        background_array[row][column] = background(image_width * (column - 1), image_height * (row - 1))
+        background_array[row][column] = background(image_width * (column), image_height * (row))
 
 last_row = num_of_background_rows - 1
 last_column = num_of_background_columns - 1
@@ -146,14 +150,25 @@ class player:
         self.max_health = health
         self.exp = exp
         self.pickup_range = pickup_range
+        self.level = 0
+        self.exp_to_level = 10
+        self.level_up_rate = 1.1
 
         '''Health Bar'''       
         self.health_bar_sizex = self.sizex * 2
         self.health_bar_sizey = 5
         self.health_bar_x = centerx - (self.health_bar_sizex // 2)
-        self.health_bar_y = centery - 10
+        self.health_bar_y = centery - 12
         self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
         self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
+
+        '''EXP Bar'''       
+        self.exp_sizex = screen_length
+        self.exp_sizey = 8
+        self.exp_x = 0
+        self.exp_y = 0
+        self.empty_exp = pygame.Rect(self.exp_x, self.exp_y, self.exp_sizex, self.exp_sizey)
+        self.full_exp = pygame.Rect(self.exp_x, self.exp_y, 0, self.exp_sizey)
 
     def move(self, direction, speed = 5):
         '''Moves enemies in a way that looks like the player is moving'''
@@ -211,12 +226,29 @@ class player:
     def health_bar(self):
         health_percent = self.health / self.max_health
         self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, int(health_percent * self.health_bar_sizex), self.health_bar_sizey)
-        
 
-    def draw_player(self):
-        pygame.draw.rect(screen, (255, 0, 0), self.red_health_bar)
-        pygame.draw.rect(screen, (0, 200, 0), self.green_health_bar)
-        pygame.draw.rect(screen, (0, 255, 0), player.rect)
+    def exp_bar(self):
+        exp_percent = self.exp / self.exp_to_level
+        self.full_exp = pygame.Rect(self.exp_x, self.exp_y, int(exp_percent * self.exp_sizex), self.exp_sizey)
+        
+    def level_up(self):
+        if self.exp >= self.exp_to_level:
+            self.exp = self.exp - self.exp_to_level
+            self.exp_to_level = math.ceil(self.exp_to_level * self.level_up_rate)
+            print("Level up!")
+            
+        
+    
+    
+def draw_player():
+    player.health_bar()
+    pygame.draw.rect(screen, (255, 0, 0), player.red_health_bar)
+    pygame.draw.rect(screen, (0, 200, 0), player.green_health_bar)
+    player.level_up()
+    player.exp_bar()
+    pygame.draw.rect(screen, (100, 100, 100), player.empty_exp)
+    pygame.draw.rect(screen, (0, 50, 255), player.full_exp)
+    pygame.draw.rect(screen, (0, 255, 0), player.rect)
 
 '''Enemy'''
 class enemy:
@@ -483,7 +515,7 @@ while running:
     draw_background()
     
     draw_experience()
-    player.draw_player()
+    draw_player()
     draw_enemies()
     draw_projectiles()
     draw_time()
