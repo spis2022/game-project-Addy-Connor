@@ -101,6 +101,12 @@ def update_background():
         for image in background_array[last_row]:
             image.y += image_height * len(background_array)
             image.rect.move_ip(0, image_height * len(background_array))
+
+def draw_background():
+    for list in background_array:
+        for image in list:
+            screen.blit(background_image, (image.x, image.y))
+    
                 
 '''Timer'''                
 def make_time():
@@ -116,6 +122,12 @@ def make_time():
     if len(minutes_str) == 1:
         minutes_str = "0" + minutes_str
     return minutes_str + ":" + seconds_str
+
+def draw_time():
+    text = font.render(game_time, True, green, blue)
+    textRectangle = text.get_rect()
+    textRectangle.center = (centerx, 9)
+    screen.blit(text, textRectangle)
 
 '''Player''' 
 class player:
@@ -266,6 +278,15 @@ def spawn_enemy():
         enemies.append(enemy())
     number_of_enemies += 1
 
+def draw_enemies():
+    try:
+        for e in enemies:
+            e.move()
+            # pygame.draw.rect(screen, (255, 0, 0), e)
+            screen.blit(enemy_image, (e.rect.topleft))
+    except:
+        pass
+
         
 '''Projectile'''
 class projectile:
@@ -326,6 +347,14 @@ class projectile:
             projectiles.remove(self)
             # print("Hit top/bottom")
         self.rect.move_ip(self.movex, self.movey)
+
+def draw_projectiles():
+    try:
+        for p in projectiles:
+            p.move()
+            pygame.draw.rect(screen, (0, 0, 255), p)
+    except:
+        pass
         
 '''Experience'''
 class exp:
@@ -369,6 +398,16 @@ class exp:
             self.check_pickup
         else:
             return
+
+def draw_experience():
+    try:
+        for xp in experience:
+            collected = xp.check_pickup()
+            if not collected:
+                xp.pickup_range()
+            pygame.draw.rect(screen, (0, 100, 200), xp)
+    except:
+        pass
 
 player = player()
 enemies = []
@@ -438,38 +477,15 @@ while running:
         seconds += 1
         previous_second = pygame.time.get_ticks()
         game_time = make_time()
+
     
     update_background()
-    for list in background_array:
-        for image in list:
-            screen.blit(background_image, (image.x, image.y))
+    draw_background()
     
+    draw_experience()
     player.draw_player()
-    try:
-        for e in enemies:
-            e.move()
-            # pygame.draw.rect(screen, (255, 0, 0), e)
-            screen.blit(enemy_image, (e.rect.topleft))
-    except:
-        pass
-    try:
-        for p in projectiles:
-            p.move()
-            pygame.draw.rect(screen, (0, 0, 255), p)
-    except:
-        pass
-    try:
-        for xp in experience:
-            collected = xp.check_pickup()
-            if not collected:
-                xp.pickup_range()
-            pygame.draw.rect(screen, (0, 100, 200), xp)
-    except:
-        pass
-
-    text = font.render(game_time, True, green, blue)
-    textRectangle = text.get_rect()
-    textRectangle.center = (centerx, 9)
-    screen.blit(text, textRectangle)
+    draw_enemies()
+    draw_projectiles()
+    draw_time()
     
     pygame.display.update()
