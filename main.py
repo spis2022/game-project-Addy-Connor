@@ -26,8 +26,8 @@ image_width, image_height = background_image.get_rect().size
 
 # screen_length = 2 * image_width
 # screen_height = 2 * image_height
-screen_length = 300
-screen_height = 300
+screen_length = 1280
+screen_height = 720
 dim_field = (screen_length, screen_height)
 screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
@@ -268,6 +268,7 @@ class enemy:
                 if player.health <= 0:
                     print("You are Dead")
                     print(f'You lasted { game_time }')
+                    pygame.time.wait(1000)
                     global running
                     running = False
 
@@ -348,6 +349,8 @@ class aura(weapon):
                     enemies[target].health += -self.damage
             except:
                 pass
+
+
 
 
 '''Projectile - Fireball'''
@@ -505,60 +508,74 @@ game_time = make_time()
 
 a = aura()
 
-while running and paused is False:
-    clock.tick(FPS)
-    current_time = pygame.time.get_ticks()
-    # print(pygame.time.get_ticks())
+while running:
     for event in pygame.event.get():
-        keys = pygame.key.get_pressed()
-    
-        if keys[pygame.K_w]:
-            player.move("up")
-        if keys[pygame.K_a]:
-            player.move("left")
-        if keys[pygame.K_s]:
-            player.move("down")
-        if keys[pygame.K_d]:
-            player.move("right")
-    # Quit game
-        if event.type == pygame.KEYDOWN: 
-            if event.key == pygame.K_q:
-                running = False
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                running = False
 
-                
-    # Spawns enemies
-    if (current_time - enemy_time >= spawn_rate):
-        spawn_enemy()
-        enemy_time = pygame.time.get_ticks()
+    if paused is False:
+        clock.tick(FPS)
+        current_time = pygame.time.get_ticks()
+        # print(pygame.time.get_ticks())
+        for event in pygame.event.get():
+            keys = pygame.key.get_pressed()
+        
+            if keys[pygame.K_w]:
+                player.move("up")
+            if keys[pygame.K_a]:
+                player.move("left")
+            if keys[pygame.K_s]:
+                player.move("down")
+            if keys[pygame.K_d]:
+                player.move("right")
+        # Quit game
+            if event.type == pygame.KEYDOWN: 
+                if event.key == pygame.K_p:
+                    paused = True
+            
 
-    # Fires projectiles
-    if (current_time - projectile_time >= fire_rate):
-        projectile_time = pygame.time.get_ticks()
-        for i in range(multi_shot):
-            try:
-                projectiles.append(projectile())
-            except:
-                break
-    # print(projectiles)
+                    
+        # Spawns enemies
+        if (current_time - enemy_time >= spawn_rate):
+            spawn_enemy()
+            enemy_time = pygame.time.get_ticks()
 
-    # Updates game time
-    if current_time - previous_second >= 1000:
-        seconds += 1
-        previous_second = pygame.time.get_ticks()
-        game_time = make_time()
+        # Fires projectiles
+        if (current_time - projectile_time >= fire_rate):
+            projectile_time = pygame.time.get_ticks()
+            for i in range(multi_shot):
+                try:
+                    projectiles.append(projectile())
+                except:
+                    break
+        # print(projectiles)
 
+        # Updates game time
+        if current_time - previous_second >= 1000:
+            seconds += 1
+            previous_second = pygame.time.get_ticks()
+            game_time = make_time()
+
+        
+        update_background()
+        draw_background()
+        
+        use_weapons()
+        draw_experience()
+        draw_player()
+        update_enemies()
+        draw_projectiles()
+        draw_time()
     
-    update_background()
-    draw_background()
-    
-    use_weapons()
-    draw_experience()
-    draw_player()
-    update_enemies()
-    draw_projectiles()
-    draw_time()
-    
+    elif paused is True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN: 
+                if event.key == pygame.K_p:
+                    paused = False
+
+
     pygame.display.update()
