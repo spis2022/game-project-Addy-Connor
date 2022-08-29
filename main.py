@@ -319,9 +319,29 @@ def draw_enemies():
     except:
         pass
 
-        
-'''Projectile'''
-class projectile:
+
+'''Weapons'''
+weapons = ["Aura"]
+my_weapons = []
+
+class weapon:
+    def __init__(self, name, damage, level):
+        my_weapons.append(self)
+        self.name = name
+        self.damage = damage
+        self.level = level
+
+'Weapon - Aura'
+class aura(weapon):
+    def __init__(self):
+        super.__init__("Aura", 1, 1)
+        self.size = 20
+        self.circle = pygame.Circle()
+    
+
+
+'''Projectile - Fireball'''
+class projectile(weapon):
     def __init__(self, size = 5, speed = 10, damage = 10):
         '''Creates projectile on player'''
         try:
