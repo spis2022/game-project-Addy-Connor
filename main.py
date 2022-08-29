@@ -340,8 +340,8 @@ class aura(weapon):
 
     def use_weapon(self):
         # screen.fill((150, 50, 50, 60), pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size), pygame.SRCALPHA)
-        pygame.draw.circle(self.surface, (150, 0, 50, 25), (centerx, centery), self.size)
-        screen.blit(self.surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        pygame.draw.circle(trans_surface, (150, 0, 50, 25), (centerx, centery), self.size)
+        screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
         if current_time - self.previous_time >= self.cd:
             self.previous_time = pygame.time.get_ticks()
             targets = self.circle.collidelistall(enemies)
@@ -524,6 +524,10 @@ while running:
         if event.type == pygame.KEYDOWN: 
             if event.key == pygame.K_q:
                 running = False
+        if event.type == pygame.QUIT:
+            running = False
+            pygame.quit()
+
                 
     # Spawns enemies
     if (current_time - enemy_time >= spawn_rate):
