@@ -346,7 +346,7 @@ class aura(weapon):
         self.cd = 1000
         self.surface = pygame.Surface((screen_length, screen_height), pygame.SRCALPHA)
         self.rect = pygame.Rect(0, 0, screen_length, screen_height)
-        pygame.draw.rect(self.surface, (0, 0, 0, 0), self.rect)
+        pygame.draw.rect(self.surface, (255, 255, 255, 0), self.rect)
         
 
 
