@@ -351,39 +351,36 @@ class aura(weapon):
 
 
 '''Projectile - Fireball'''
-class projectile(weapon):
+class projectile:
     def __init__(self, size = 5, speed = 10, damage = 10):
         '''Creates projectile on player'''
-        try:
-            self.x, self.y = player.rect.topleft
-            self.size = size
-            self.speed = speed
-            self.damage = damage
-            self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
-            # projectiles.append(self)
-        
-            self.targetx, self.targety = random.choice(enemies).rect.center
+        self.x, self.y = player.rect.topleft
+        self.size = size
+        self.speed = speed
+        self.damage = damage
+        self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
+        # projectiles.append(self)
+    
+        self.targetx, self.targety = random.choice(enemies).rect.center
 
-            '''Calculate angle to move'''
-            self.x, self.y = self.rect.center
-            self.distancex = self.x - self.targetx 
-            self.distancey = self.y - self.targety 
-            try:
-                self.angle = math.atan(self.distancey / self.distancex)
-            # If self.distancex is 0, then the angle is pi/2 or -pi/2
-            except ZeroDivisionError:
-                if self.distancey > 0:
-                    self.angle = -math.pi/2
-                elif self.distancey < 0:
-                    self.angle = math.pi/2
-            self.movex = int(speed * math.cos(self.angle))
-            self.movey = int(speed * math.sin(self.angle))
-            if self.x > self.targetx:
-                self.movex = -self.movex
-                self.movey = -self.movey
-        except:
-            if self in projectiles:
-                projectiles.remove(self)
+        '''Calculate angle to move'''
+        self.x, self.y = self.rect.center
+        self.distancex = self.x - self.targetx 
+        self.distancey = self.y - self.targety 
+        try:
+            self.angle = math.atan(self.distancey / self.distancex)
+        # If self.distancex is 0, then the angle is pi/2 or -pi/2
+        except ZeroDivisionError:
+            if self.distancey > 0:
+                self.angle = -math.pi/2
+            elif self.distancey < 0:
+                self.angle = math.pi/2
+        self.movex = int(speed * math.cos(self.angle))
+        self.movey = int(speed * math.sin(self.angle))
+        if self.x > self.targetx:
+            self.movex = -self.movex
+            self.movey = -self.movey
+
             
 
     def move(self):
@@ -417,6 +414,11 @@ def draw_projectiles():
             pygame.draw.rect(screen, (0, 0, 255), p)
     except:
         pass
+
+def use_weapons():
+    for w in my_weapons:
+        w.use_weapon()
+
         
 '''Experience'''
 class exp:
@@ -489,7 +491,7 @@ enemy_time = pygame.time.get_ticks()
 projectile_time = pygame.time.get_ticks()
 spawn_rate = 5000
 fire_rate = 1000
-multi_shot = 2
+multi_shot = 5
 
 # Pause screen + Timer
 paused = False
@@ -503,7 +505,7 @@ game_time = make_time()
 
 a = aura()
 
-while running:
+while running and paused is False:
     clock.tick(FPS)
     current_time = pygame.time.get_ticks()
     # print(pygame.time.get_ticks())
@@ -533,14 +535,17 @@ while running:
         enemy_time = pygame.time.get_ticks()
 
     # Fires projectiles
-    # if (current_time - projectile_time >= fire_rate):
-    #     for i in range(multi_shot):
-    #         projectiles.append(projectile())
-    #     projectile_time = pygame.time.get_ticks()
+    if (current_time - projectile_time >= fire_rate):
+        projectile_time = pygame.time.get_ticks()
+        for i in range(multi_shot):
+            try:
+                projectiles.append(projectile())
+            except:
+                break
     # print(projectiles)
 
     # Updates game time
-    if current_time - previous_second >= 1000 and paused is False:
+    if current_time - previous_second >= 1000:
         seconds += 1
         previous_second = pygame.time.get_ticks()
         game_time = make_time()
@@ -549,12 +554,11 @@ while running:
     update_background()
     draw_background()
     
-    
-    a.use_weapon()
+    use_weapons()
     draw_experience()
     draw_player()
     update_enemies()
-    # draw_projectiles()
+    draw_projectiles()
     draw_time()
     
     pygame.display.update()
