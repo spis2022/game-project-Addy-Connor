@@ -6,15 +6,13 @@ import random
 import math
 
 
-# Set screen dimensions
 
-
-# imports from assets
+'''Imports from assets'''
 # background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
 background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
 enemy_image = pygame.image.load(os.path.join("assets", "enemy.png"))
 
-# background
+'''Background'''
 class background:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, image_width, image_height)
@@ -22,8 +20,8 @@ class background:
         self.y = y
 
 image_width, image_height = background_image.get_rect().size
-# print(image_width)
-# print(image_height)
+
+# Set screen dimensions
 
 # screen_length = 2 * image_width
 # screen_height = 2 * image_height
@@ -33,22 +31,37 @@ dim_field = (screen_length, screen_height)
 screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
 
-# top third
-bg1 = background(-image_width, -image_height)
-bg2 = background(0, -image_height)
-bg3 = background(image_width, -image_height)
-# middle third
-bg4 = background(-image_width, 0)
-bg5 = background(0, 0)
-bg6 = background(image_width, 0)
-# bottom third
-bg7 = background(-image_width, image_height)
-bg8 = background(0, image_height)
-bg9 = background(image_width, image_height)
+num_of_background_columns = math.ceil(screen_length / image_width) + 1
+num_of_background_rows = math.ceil(screen_height / image_height) + 1
 
-background_array = [[bg1, bg2, bg3],
-                   [bg4, bg5, bg6],
-                   [bg7, bg8, bg9]]
+background_array = []
+
+for row in range(num_of_background_rows):
+    background_array.append([])
+
+for row in range(num_of_background_rows):
+    for column in range(num_of_background_columns):
+        background_array[row][column] = background(image_width * (column - 1), image_height * (row - 1))
+
+last_row = num_of_background_rows - 1
+last_column = num_of_background_columns - 1
+
+# # top third
+# bg1 = background(-image_width, -image_height)
+# bg2 = background(0, -image_height)
+# bg3 = background(image_width, -image_height)
+# # middle third
+# bg4 = background(-image_width, 0)
+# bg5 = background(0, 0)
+# bg6 = background(image_width, 0)
+# # bottom third
+# bg7 = background(-image_width, image_height)
+# bg8 = background(0, image_height)
+# bg9 = background(image_width, image_height)
+
+# background_array = [[bg1, bg2, bg3],
+#                    [bg4, bg5, bg6],
+#                    [bg7, bg8, bg9]]
 
 def update_background():
     
@@ -59,7 +72,7 @@ def update_background():
     # print('-------------------')
     
     # Checks right edge
-    if background_array[0][2].rect.right < screen_length:
+    if background_array[0][last_column].rect.right < screen_length:
         for i, list in enumerate(background_array):
             list[0].x += image_width * len(list)
             list[0].rect.move_ip(image_width * len(list), 0)
@@ -68,30 +81,42 @@ def update_background():
     # Checks left edge
     if background_array[0][0].rect.left > 0:
         for i, list in enumerate(background_array):
-            list[2].x += -image_width * len(list)
-            list[2].rect.move_ip(-image_width * len(list), 0)
-            list.insert(0, list.pop(2))
+            list[last_column].x += -image_width * len(list)
+            list[last_column].rect.move_ip(-image_width * len(list), 0)
+            list.insert(0, list.pop(last_column))
             
     # Checks top edge
     if background_array[0][0].rect.top > 0:
         # for list in background_array:
-        background_array.insert(0, background_array.pop(2))
+        background_array.insert(0, background_array.pop(last_row))
         for image in background_array[0]:
             image.y += -image_height * len(background_array)
             image.rect.move_ip(0, -image_height * len(background_array))
             
     # Checks bottom edge
-    if background_array[2][0].rect.bottom < screen_height:
+    if background_array[last_row][0].rect.bottom < screen_height:
         # for list in background_array:
         background_array.append(background_array.pop(0))
-        for image in background_array[2]:
+        for image in background_array[last_row]:
             image.y += image_height * len(background_array)
             image.rect.move_ip(0, image_height * len(background_array))
                 
-                
+'''Timer'''                
+def make_time():
+    global minutes
+    global seconds
+    if seconds == 60:
+        seconds = 0
+        minutes += 1
+    seconds_str = str(seconds)
+    minutes_str = str(minutes)
+    if len(seconds_str) == 1:
+        seconds_str = "0" + seconds_str
+    if len(minutes_str) == 1:
+        minutes_str = "0" + minutes_str
+    return minutes_str + ":" + seconds_str
 
-
-# player class 
+'''Player''' 
 class player:
     def __init__(self, health = 100, exp = 0, pickup_range = 20):
         '''Create player rectangle and set it in the center'''
@@ -161,7 +186,7 @@ class player:
         except:
             pass
 
-# enemy class
+'''Enemy'''
 class enemy:
     def __init__(self, damage = 1, health = 20, speed = 2, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
@@ -174,7 +199,7 @@ class enemy:
         self.rect = pygame.Rect(self.x, self.y, self.sizex, self.sizey)
         # enemies.append(self)
 
-        '''Create enemy attributes'''
+        '''Set enemy attributes'''
         # self.name = name
         self.damage = damage
         self.health = health
@@ -188,6 +213,7 @@ class enemy:
                 print(f'Health: {player.health}')
                 if player.health <= 0:
                     print("You are Dead")
+                    print(f'You lasted { game_time }')
                     global running
                     running = False
 
@@ -221,7 +247,7 @@ def spawn_enemy():
     number_of_enemies += 1
 
         
-# projectile class
+'''Projectile'''
 class projectile:
     def __init__(self, size = 5, speed = 10, damage = 10):
         '''Creates projectile on player'''
@@ -281,7 +307,7 @@ class projectile:
             # print("Hit top/bottom")
         self.rect.move_ip(self.movex, self.movey)
         
-# experience
+'''Experience'''
 class exp:
     def __init__(self, locationx, locationy, value = 1, size = 4):
         self.rect = pygame.Rect(locationx, locationy, size, size)
@@ -344,6 +370,17 @@ spawn_rate = 5000
 fire_rate = 1000
 multi_shot = 2
 
+# Pause screen + Timer
+paused = False
+minutes = 0
+seconds = 0
+previous_second = pygame.time.get_ticks()
+green = (0,255,0)
+blue = (0,0,255)
+font = pygame.font.SysFont('timesnewroman', 16)
+game_time = make_time()
+
+
 while running:
     clock.tick(FPS)
     current_time = pygame.time.get_ticks()
@@ -365,17 +402,23 @@ while running:
                 running = False
                 
     # Spawns enemies
-    if (current_time - enemy_time > spawn_rate):
+    if (current_time - enemy_time >= spawn_rate):
         spawn_enemy()
         enemy_time = pygame.time.get_ticks()
 
     # Fires projectiles
-    if (current_time - projectile_time > fire_rate):
+    if (current_time - projectile_time >= fire_rate):
         for i in range(multi_shot):
             projectiles.append(projectile())
         projectile_time = pygame.time.get_ticks()
     # print(projectiles)
 
+    # Updates game time
+    if current_time - previous_second >= 1000 and paused is False:
+        seconds += 1
+        previous_second = pygame.time.get_ticks()
+        game_time = make_time()
+    
     update_background()
     for list in background_array:
         for image in list:
@@ -402,4 +445,9 @@ while running:
             pygame.draw.rect(screen, (0, 100, 200), xp)
     except:
         pass
+
+    text = font.render(game_time, True, green, blue)
+    textRectangle = text.get_rect()
+    screen.blit(text, textRectangle)
+    
     pygame.display.update()

@@ -343,4 +343,5 @@ while running:
             pygame.draw.rect(screen, (0, 0, 255), p)
     except:
         pass
+
     pygame.display.update()
