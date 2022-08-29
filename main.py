@@ -11,7 +11,7 @@ import math
 
 # imports from assets
 # background_rect = pygame.Rect(screen_length, screen_height, 0, 0)
-background_image = pygame.image.load(os.path.join("assets","grass-86.jpg"))
+background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
 enemy_image = pygame.image.load(os.path.join("assets", "enemy.png"))
 
 # background
