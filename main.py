@@ -4,6 +4,7 @@ import pygame
 import os
 import random
 import math
+pygame.init()
 
 
 
@@ -125,13 +126,22 @@ class player:
         self.x = centerx
         self.y = centery
         # keep player centered
-        self.rect = pygame.Rect(self.x - self.sizex // 2, self.y - self.sizey // 2, self.sizex, self.sizey) 
+        self.rect = pygame.Rect(0, 0, self.sizex, self.sizey) 
+        self.rect.center = (centerx, centery)
 
         '''Set player attributes'''
         self.health = health
+        self.max_health = health
         self.exp = exp
         self.pickup_range = pickup_range
 
+        '''Health Bar'''       
+        self.health_bar_sizex = self.sizex * 2
+        self.health_bar_sizey = 5
+        self.health_bar_x = centerx - (self.health_bar_sizex // 2)
+        self.health_bar_y = centery - 10
+        self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
+        self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
 
     def move(self, direction, speed = 5):
         '''Moves enemies in a way that looks like the player is moving'''
@@ -185,6 +195,16 @@ class player:
                     xp.rect.move_ip(0, -speed)
         except:
             pass
+
+    def health_bar(self):
+        health_percent = self.health / self.max_health
+        self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, int(health_percent * self.health_bar_sizex), self.health_bar_sizey)
+        
+
+    def draw_player(self):
+        pygame.draw.rect(screen, (255, 0, 0), self.red_health_bar)
+        pygame.draw.rect(screen, (0, 200, 0), self.green_health_bar)
+        pygame.draw.rect(screen, (0, 255, 0), player.rect)
 
 '''Enemy'''
 class enemy:
@@ -423,7 +443,8 @@ while running:
     for list in background_array:
         for image in list:
             screen.blit(background_image, (image.x, image.y))
-    pygame.draw.rect(screen, (0, 255, 0), player.rect)
+    
+    player.draw_player()
     try:
         for e in enemies:
             e.move()
@@ -448,6 +469,7 @@ while running:
 
     text = font.render(game_time, True, green, blue)
     textRectangle = text.get_rect()
+    textRectangle.center = (centerx, 9)
     screen.blit(text, textRectangle)
     
     pygame.display.update()
