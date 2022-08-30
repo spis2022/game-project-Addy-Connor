@@ -244,17 +244,15 @@ def draw_player():
 class enemy:
     def __init__(self, damage = 1, health = 20, speed = 2, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
-        self.sizex = 10
-        self.sizey = 10
-        self.angle = random.random() * (math.pi*2)
+        sizex = 10
+        sizey = 10
+        angle = random.random() * (math.pi*2)
         # x distance and y distance -> diagonal/hypotenuse from center
-        self.x = centerx + int(distance * math.cos(self.angle))
-        self.y = centery + int(distance * math.sin(self.angle))
-        self.rect = pygame.Rect(self.x, self.y, self.sizex, self.sizey)
-        # enemies.append(self)
+        x = centerx + int(distance * math.cos(angle))
+        y = centery + int(distance * math.sin(angle))
+        self.rect = pygame.Rect(x, y, sizex, sizey)
 
         '''Set enemy attributes'''
-        # self.name = name
         self.damage = damage
         self.health = health
         self.speed = speed
@@ -277,23 +275,23 @@ class enemy:
             if self.rect.colliderect(enemy):
                 self.rect.move_ip(5, 5)
                 enemy.rect.move_ip(-5, -5)
-        self.x, self.y = self.rect.center
-        self.distancex = self.x - player.x 
-        self.distancey = self.y - player.y 
+        x, y = self.rect.center
+        distancex = x - player.x 
+        distancey = y - player.y 
         try:
-            self.angle = math.atan(self.distancey / self.distancex)
+            angle = math.atan(distancey / distancex)
         # If self.distancex is 0, then the angle is pi/2 or -pi/2
         except ZeroDivisionError:
-            if self.distancey > 0:
-                self.angle = -math.pi/2
-            elif self.distancey < 0:
-                self.angle = math.pi/2
-        self.movex = int(self.speed * math.cos(self.angle))
-        self.movey = int(self.speed * math.sin(self.angle))
-        if self.x > player.x:
-            self.movex = -self.movex
-            self.movey = -self.movey
-        self.rect.move_ip(self.movex, self.movey)
+            if distancey > 0:
+                angle = -math.pi/2
+            elif distancey < 0:
+                angle = math.pi/2
+        movex = int(self.speed * math.cos(angle))
+        movey = int(self.speed * math.sin(angle))
+        if x > player.x:
+            movex = -movex
+            movey = -movey
+        self.rect.move_ip(movex, movey)
 
     def check_health(self):
         if self.health <= 0:
@@ -357,57 +355,49 @@ class aura(weapon):
 class projectile:
     def __init__(self, size = 5, speed = 10, damage = 10):
         '''Creates projectile on player'''
-        self.x, self.y = player.rect.topleft
+        x, y = player.rect.topleft
         self.size = size
         self.speed = speed
         self.damage = damage
-        self.rect = pygame.Rect(self.x, self.y, self.size, self.size)
+        self.rect = pygame.Rect(x, y, self.size, self.size)
         # projectiles.append(self)
     
-        self.targetx, self.targety = random.choice(enemies).rect.center
+        targetx, targety = random.choice(enemies).rect.center
 
         '''Calculate angle to move'''
-        self.x, self.y = self.rect.center
-        self.distancex = self.x - self.targetx 
-        self.distancey = self.y - self.targety 
+        x, y = self.rect.center
+        distancex = x - targetx 
+        distancey = y - targety 
         try:
-            self.angle = math.atan(self.distancey / self.distancex)
+            angle = math.atan(distancey / distancex)
         # If self.distancex is 0, then the angle is pi/2 or -pi/2
         except ZeroDivisionError:
-            if self.distancey > 0:
-                self.angle = -math.pi/2
-            elif self.distancey < 0:
-                self.angle = math.pi/2
-        self.movex = int(speed * math.cos(self.angle))
-        self.movey = int(speed * math.sin(self.angle))
-        if self.x > self.targetx:
+            if distancey > 0:
+                angle = -math.pi/2
+            elif distancey < 0:
+                angle = math.pi/2
+        self.movex = int(speed * math.cos(angle))
+        self.movey = int(speed * math.sin(angle))
+        if x > targetx:
             self.movex = -self.movex
-            self.movey = -self.movey
-
-            
+            self.movey = -self.movey  
 
     def move(self):
         '''Moves projectile'''
         try:
             for enemy in enemies:
                 if self.rect.colliderect(enemy):
-                    # print("Removed projectile")
                     projectiles.remove(self)
                     enemy.health += -self.damage
                     # print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
-                    # if enemy.health <= 0:
-                    #     experience.append(exp(self.x, self.y))
-                    #     enemies.remove(enemy)
         except:
             pass
 
-        self.x, self.y = self.rect.center
-        if self.x > screen_length or self.x < 0:
+        x, y = self.rect.center
+        if x > screen_length or x < 0:
             projectiles.remove(self)
-            # print("Hit edge")
-        if self.y > screen_height or self.y < 0:
+        if y > screen_height or y < 0:
             projectiles.remove(self)
-            # print("Hit top/bottom")
         self.rect.move_ip(self.movex, self.movey)
 
 def draw_projectiles():
@@ -428,8 +418,6 @@ class exp:
     def __init__(self, locationx, locationy, value = 1, size = 4):
         self.rect = pygame.Rect(locationx, locationy, size, size)
         self.value = value
-        self.x = locationx
-        self.y = locationy
         
     def check_pickup(self):
         if self.rect.colliderect(player):
@@ -439,9 +427,9 @@ class exp:
             return True
 
     def pickup_range(self):
-        self.x, self.y = self.rect.center
-        distancex = self.x - player.x 
-        distancey = self.y - player.y 
+        x, y = self.rect.center
+        distancex = x - player.x 
+        distancey = y - player.y 
         distance = math.sqrt(distancex ** 2 + distancey ** 2)
         if distance < player.pickup_range:
             move_dist = (player.pickup_range / distance) + 1
@@ -466,7 +454,7 @@ class exp:
         else:
             return
 
-def draw_experience():
+def update_experience():
     try:
         for xp in experience:
             collected = xp.check_pickup()
@@ -508,74 +496,74 @@ game_time = make_time()
 
 a = aura()
 
-while running:
+while running and paused is False:
+    clock.tick(FPS)
+    current_time = pygame.time.get_ticks()
+    # print(pygame.time.get_ticks())
     for event in pygame.event.get():
+        keys = pygame.key.get_pressed()
+    
+        if keys[pygame.K_w]:
+            player.move("up")
+        if keys[pygame.K_a]:
+            player.move("left")
+        if keys[pygame.K_s]:
+            player.move("down")
+        if keys[pygame.K_d]:
+            player.move("right")
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
-        if event.type == pygame.KEYDOWN:
+    # Quit game
+        if event.type == pygame.KEYDOWN: 
+            if event.key == pygame.K_p:
+                paused = True
             if event.key == pygame.K_q:
                 running = False
+                pygame.quit()
+                   
+    # Spawns enemies
+    if (current_time - enemy_time >= spawn_rate):
+        spawn_enemy()
+        enemy_time = pygame.time.get_ticks()
 
-    if paused is False:
-        clock.tick(FPS)
-        current_time = pygame.time.get_ticks()
-        # print(pygame.time.get_ticks())
-        for event in pygame.event.get():
-            keys = pygame.key.get_pressed()
-        
-            if keys[pygame.K_w]:
-                player.move("up")
-            if keys[pygame.K_a]:
-                player.move("left")
-            if keys[pygame.K_s]:
-                player.move("down")
-            if keys[pygame.K_d]:
-                player.move("right")
-        # Quit game
-            if event.type == pygame.KEYDOWN: 
-                if event.key == pygame.K_p:
-                    paused = True
-            
+    # Fires projectiles
+    if (current_time - projectile_time >= fire_rate):
+        projectile_time = pygame.time.get_ticks()
+        for i in range(multi_shot):
+            try:
+                projectiles.append(projectile())
+            except:
+                break
+    # print(projectiles)
 
-                    
-        # Spawns enemies
-        if (current_time - enemy_time >= spawn_rate):
-            spawn_enemy()
-            enemy_time = pygame.time.get_ticks()
+    # Updates game time
+    if current_time - previous_second >= 1000:
+        seconds += 1
+        previous_second = pygame.time.get_ticks()
+        game_time = make_time()
 
-        # Fires projectiles
-        if (current_time - projectile_time >= fire_rate):
-            projectile_time = pygame.time.get_ticks()
-            for i in range(multi_shot):
-                try:
-                    projectiles.append(projectile())
-                except:
-                    break
-        # print(projectiles)
-
-        # Updates game time
-        if current_time - previous_second >= 1000:
-            seconds += 1
-            previous_second = pygame.time.get_ticks()
-            game_time = make_time()
-
-        
-        update_background()
-        draw_background()
-        
-        use_weapons()
-        draw_experience()
-        draw_player()
-        update_enemies()
-        draw_projectiles()
-        draw_time()
     
-    elif paused is True:
+    update_background()
+    draw_background()
+    
+    use_weapons()
+    update_experience()
+    draw_player()
+    update_enemies()
+    draw_projectiles()
+    draw_time()
+
+    while paused is True:
         for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
             if event.type == pygame.KEYDOWN: 
                 if event.key == pygame.K_p:
                     paused = False
-
+                if event.key == pygame.K_q:
+                    running = False
+                    pygame.quit()
 
     pygame.display.update()
