@@ -329,24 +329,41 @@ class weapon:
 'Weapon - Aura'
 class aura(weapon):
     def __init__(self):
-        super().__init__("Aura", 20, 1)
+        super().__init__("Aura", 10, 1)
         self.size = 40
         self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
         self.cd = 1000
+        self.immune = {}
 
     def use_weapon(self):
         # screen.fill((150, 50, 50, 60), pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size), pygame.SRCALPHA)
         pygame.draw.circle(trans_surface, (150, 0, 50, 25), (centerx, centery), self.size)
         screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
         # pygame.draw.circle(screen, (255, 255, 255), self.circle)
-        if current_time - self.previous_time >= self.cd:
-            self.previous_time = pygame.time.get_ticks()
-            targets = self.circle.collidelistall(enemies)
-            try:
-                for target in targets:
-                    enemies[target].health += -self.damage
-            except:
-                pass
+        targets_index = self.circle.collidelistall(enemies)
+        targets_enemies = []
+        try:
+            for index in targets_index:
+                targets_enemies.append(enemies[index])
+        except:
+            pass
+        try:
+            for key, value in self.immune.items():
+                if current_time - value >= self.cd:
+                    del self.immune[key]
+        except:
+            pass
+        try:
+            for target in targets_enemies:
+                if target in self.immune:
+                    pass
+                else:
+                    target.health += -self.damage
+                    self.immune[target] = pygame.time.get_ticks()
+        except:
+            pass
+            
+            
 
 
 
@@ -527,14 +544,14 @@ while running and paused is False:
         spawn_enemy()
         enemy_time = pygame.time.get_ticks()
 
-    # Fires projectiles
-    if (current_time - projectile_time >= fire_rate):
-        projectile_time = pygame.time.get_ticks()
-        for i in range(multi_shot):
-            try:
-                projectiles.append(projectile())
-            except:
-                break
+    # # Fires projectiles
+    # if (current_time - projectile_time >= fire_rate):
+    #     projectile_time = pygame.time.get_ticks()
+    #     for i in range(multi_shot):
+    #         try:
+    #             projectiles.append(projectile())
+    #         except:
+    #             break
     # print(projectiles)
 
     # Updates game time
@@ -551,7 +568,7 @@ while running and paused is False:
     update_experience()
     update_player()
     update_enemies()
-    update_projectiles()
+    # update_projectiles()
     draw_time()
 
     while paused is True:
