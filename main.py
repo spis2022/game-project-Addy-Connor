@@ -143,6 +143,9 @@ class player:
         self.level = 0
         self.exp_to_level = 10
         self.level_up_rate = 1.1
+        self.dash_cd = 3000
+        self.dash_previous_time = pygame.time.get_ticks()
+        player.direction = "right"
 
         '''Health Bar'''       
         self.health_bar_sizex = self.sizex * 2
@@ -262,7 +265,7 @@ class enemy:
         if self.rect.colliderect(player):
             if player.health > 0:
                 player.health += -self.damage
-                print(f'Health: {player.health}')
+                # print(f'Health: {player.health}')
                 if player.health <= 0:
                     print("You are Dead")
                     print(f'You lasted { game_time }')
@@ -315,7 +318,7 @@ def update_enemies():
 
 
 '''Weapons'''
-weapons = ["Aura"]
+weapons = ["Aura", "Fireball"]
 my_weapons = []
 
 class weapon:
@@ -359,37 +362,152 @@ class aura(weapon):
                     pass
                 else:
                     target.health += -self.damage
-                    self.immune[target] = pygame.time.get_ticks()
+                    self.immune[target] = current_time
         except:
             pass
-            
-            
+
+'Weapon - Fireball'  
+class fireball(weapon):
+    def __init__(self):
+        super().__init__("Fireball", 15, 1)
+        self.size = 5
+        self.radius = 20
+        self.speed = 10
+        self.cd = 5000
+        self.previous_time = pygame.time.get_ticks()
+        self.projectiles = []
+
+    def get_target(self):
+        targetx, targety = pygame.mouse.get_pos()
+        self.projectiles.append(projectile(targetx, targety, size = self.size, speed = self.speed, color = (255, 100, 0)))
+    
+    def explode(self):
+        try:
+            for f in self.projectiles:
+                x, y = f.rect.center
+                if x > screen_length or x < 0 or y > screen_height or y < 0:
+                    self.projectiles.remove(f)
+                    projectiles.remove(f)
+                if f.rect.collidelistall(enemies):
+                    self.projectiles.remove(f)
+                    print("Explode!")
+                    projectiles.remove(f)
+                    area = pygame.draw.circle(screen, (255, 100, 0), (x, y), self.radius)
+                    targets_index = area.collidelistall(enemies)
+                    print(targets_index)
+                    try:
+                        for target in targets_index:
+                            enemies[target].health += -self.damage
+                    except:
+                        pass   
+        except:
+            pass
+
+    def use_weapon(self):
+        self.explode()
+        if current_time - self.previous_time >= self.cd:
+            self.get_target()
+            self.previous_time = current_time
+
+'Weapon - Water Bolt'
+class water_bolt(weapon):
+    def __init__(self):
+        super().__init__("Water Bolt", 10, 1)
+        self.bounces = 3
+        self.speed = 10
+        self.size = 4
+        self.previous_time = pygame.time.get_ticks()
+        self.cd = 3000
+        self.projectiles = []
+
+    def get_target(self):
+        try:
+            targetx, targety = random.choice(enemies).rect.center
+            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (0, 0, 255)))
+            self.projectiles[-1].bounces = 0
+        except:
+            pass
+
+    def bounce(self):
+        try:
+            for w in self.projectiles:
+                x, y = w.rect.center
+                if x >= screen_length:
+                    w.movex = -w.movex
+                    w.bounces += 1
+                    w.rect.right = screen_length
+                    pass
+                if x <= 0:
+                    w.movex = -w.movex
+                    w.bounces += 1
+                    w.rect.left = 0
+                    pass
+                if y >= screen_height:
+                    w.movey = -w.movey
+                    w.bounces +=1
+                    w.bottom = screen_height
+                    pass
+                if y <= 0:
+                    w.movey = -w.movey
+                    w.bounces +=1
+                    w.top = 0
+                    pass
+                if w.bounces > self.bounces:
+                    self.projectiles.remove(w)
+                    projectiles.remove(w)
+        except:
+            pass
+
+    def check_hit(self):
+        try:
+            for w in self.projectiles:
+                if w.rect.collidelistall(enemies):
+                    targets_index = w.rect.collidelistall(enemies)
+                    targets_enemies = []
+                    try:
+                        for index in targets_index:
+                            targets_enemies.append(enemies[index])
+                    except:
+                        pass
+                    try:
+                        for target in targets_enemies:
+                            target.health += -self.damage
+                    except:
+                        pass 
+        except:
+            pass
+
+    def use_weapon(self):
+        self.bounce()
+        self.check_hit()
+        if current_time - self.previous_time >= self.cd:
+            self.get_target()
+            self.previous_time = current_time
 
 
 
 
-'''Projectile - Fireball'''
+'''Projectile'''
 class projectile:
-    def __init__(self, size = 5, speed = 10, damage = 10):
+    def __init__(self, targetx, targety, size = 5, speed = 10, color = (255, 255, 255)):
         '''Creates projectile on player'''
-        x, y = player.rect.topleft
+        x, y = player.rect.center
         self.size = size
         self.speed = speed
-        self.damage = damage
+        # self.damage = damage
+        self.color = color
         self.rect = pygame.Rect(x, y, self.size, self.size)
-        # projectiles.append(self)
-    
-        targetx, targety = random.choice(enemies).rect.center
+        self.rect.center = (x, y)
+        projectiles.append(self)
 
         '''Calculate angle to move'''
-        x, y = self.rect.center
         distancex = x - targetx 
         distancey = y - targety 
         try:
             angle = math.atan(distancey / distancex)
         # If self.distancex is 0, then the angle is pi/2 or -pi/2
         except ZeroDivisionError:
-            if distancey > 0:
+            if distancey >= 0:
                 angle = -math.pi/2
             elif distancey < 0:
                 angle = math.pi/2
@@ -401,27 +519,27 @@ class projectile:
 
     def move(self):
         '''Moves projectile'''
-        try:
-            for enemy in enemies:
-                if self.rect.colliderect(enemy):
-                    projectiles.remove(self)
-                    enemy.health += -self.damage
-                    # print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
-        except:
-            pass
+        # try:
+        #     for enemy in enemies:
+        #         if self.rect.colliderect(enemy):
+        #             projectiles.remove(self)
+        #             enemy.health += -self.damage
+        #             # print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
+        # except:
+        #     pass
 
-        x, y = self.rect.center
-        if x > screen_length or x < 0:
-            projectiles.remove(self)
-        if y > screen_height or y < 0:
-            projectiles.remove(self)
+        # x, y = self.rect.center
+        # if x > screen_length or x < 0:
+        #     projectiles.remove(self)
+        # if y > screen_height or y < 0:
+        #     projectiles.remove(self)
         self.rect.move_ip(self.movex, self.movey)
 
 def update_projectiles():
     try:
         for p in projectiles:
             p.move()
-            pygame.draw.rect(screen, (0, 0, 255), p)
+            pygame.draw.rect(screen, p.color, p.rect)
     except:
         pass
 
@@ -511,7 +629,7 @@ blue = (0,0,255)
 font = pygame.font.SysFont('timesnewroman', 16)
 game_time = make_time()
 
-a = aura()
+a = water_bolt()
 
 while running and paused is False:
     clock.tick(FPS)
@@ -522,12 +640,16 @@ while running and paused is False:
     
         if keys[pygame.K_w]:
             player.move("up")
+            player.direction = "up"
         if keys[pygame.K_a]:
             player.move("left")
+            player.direction = "left"
         if keys[pygame.K_s]:
             player.move("down")
+            player.direction = "down"
         if keys[pygame.K_d]:
             player.move("right")
+            player.direction = "right"
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
@@ -538,6 +660,12 @@ while running and paused is False:
             if event.key == pygame.K_q:
                 running = False
                 pygame.quit()
+            if event.key == pygame.K_LSHIFT:
+                print("Dash")
+                if current_time - player.dash_previous_time >= player.dash_cd:
+                    player.move(player.direction, speed = 50)
+                    player.dash_previous_time = current_time
+                # player.direction
                    
     # Spawns enemies
     if (current_time - enemy_time >= spawn_rate):
@@ -568,7 +696,7 @@ while running and paused is False:
     update_experience()
     update_player()
     update_enemies()
-    # update_projectiles()
+    update_projectiles()
     draw_time()
 
     while paused is True:
