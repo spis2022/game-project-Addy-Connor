@@ -12,6 +12,7 @@ pygame.init()
 
 background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
 enemy_image = pygame.image.load(os.path.join("assets", "enemy.png"))
+player_image = pygame.image.load(os.path.join("assets", "wizard_sprite.png"))
 
 '''Background'''
 class background:
@@ -127,8 +128,8 @@ def draw_time():
 class player:
     def __init__(self, health = 100, exp = 0, pickup_range = 20):
         '''Create player rectangle and set it in the center'''
-        self.sizex = 10
-        self.sizey = 10
+        self.sizex = 40
+        self.sizey = 40
         self.x = centerx
         self.y = centery
         # keep player centered
@@ -145,7 +146,8 @@ class player:
         self.level_up_rate = 1.1
         self.dash_cd = 3000
         self.dash_previous_time = pygame.time.get_ticks()
-        player.direction = "right"
+        self.direction = "right"
+
 
         '''Health Bar'''       
         self.health_bar_sizex = self.sizex * 2
@@ -162,6 +164,7 @@ class player:
         self.exp_y = 0
         self.empty_exp = pygame.Rect(self.exp_x, self.exp_y, self.exp_sizex, self.exp_sizey)
         self.full_exp = pygame.Rect(self.exp_x, self.exp_y, 0, self.exp_sizey)
+        self.choose_upgrade = False
 
     def move(self, direction, speed = 5):
         '''Moves enemies in a way that looks like the player is moving'''
@@ -228,8 +231,19 @@ class player:
         if self.exp >= self.exp_to_level:
             self.exp = self.exp - self.exp_to_level
             self.exp_to_level = math.ceil(self.exp_to_level * self.level_up_rate)
-            print("Level up!")
-            
+            # print("Level up!")
+            self.choose_upgrade = True
+            try:
+                self.upgrades = random.sample(weapons, k = 3)
+            except:
+                pass
+            self.upgrades_surface = {}
+            for i, upgrade in enumerate(self.upgrades):
+                text = font.render(upgrade.name, True, (255, 255, 255), (50, 50, 50))
+                text_rect = text.get_rect()
+                text_rect.center = (screen_length // 3 * i + screen_length // 6, centery)
+                self.upgrades_surface[upgrade] = [text, text_rect]
+                
         
     
     
@@ -237,11 +251,12 @@ def update_player():
     player.health_bar()
     pygame.draw.rect(screen, (255, 0, 0), player.red_health_bar)
     pygame.draw.rect(screen, (0, 200, 0), player.green_health_bar)
-    player.level_up()
     player.exp_bar()
+    player.level_up()
     pygame.draw.rect(screen, (100, 100, 100), player.empty_exp)
     pygame.draw.rect(screen, (0, 50, 255), player.full_exp)
-    pygame.draw.rect(screen, (0, 255, 0), player.rect)
+    # pygame.draw.rect(screen, (0, 255, 0), player.rect)
+    screen.blit(player_image, player.rect.topleft)
 
 '''Enemy'''
 class enemy:
@@ -298,13 +313,16 @@ class enemy:
 
     def check_health(self):
         if self.health <= 0:
+            # print("Dead")
             enemies.remove(self)
-            experience.append(exp(self.x, self.y))
+            x, y = self.rect.center
+            experience.append(exp(x, y, value = 10, size = 8))
+            # print(experience)
 
 def spawn_enemy():
     global number_of_enemies
     for i in range(number_of_enemies):
-        enemies.append(enemy())
+        enemies.append(enemy(speed=number_of_enemies))
     number_of_enemies += 1
 
 def update_enemies():
@@ -318,21 +336,23 @@ def update_enemies():
 
 
 '''Weapons'''
-weapons = ["Aura", "Fireball"]
-my_weapons = []
-
 class weapon:
-    def __init__(self, name, damage, level):
-        my_weapons.append(self)
+    def __init__(self, name, damage, level = 0):
+        # my_weapons.append(self)
         self.name = name
         self.damage = damage
         self.level = level
         self.previous_time = pygame.time.get_ticks()
 
+    def level_up(self):
+        self.level += 1
+        if self.level == 1:
+            my_weapons.append(self)
+
 'Weapon - Aura'
 class aura(weapon):
     def __init__(self):
-        super().__init__("Aura", 10, 1)
+        super().__init__("Aura", 10)
         self.size = 40
         self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
         self.cd = 1000
@@ -366,14 +386,20 @@ class aura(weapon):
         except:
             pass
 
+    def level_up(self):
+        super().level_up()
+        self.size *= 1.1
+        self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
+        
+
 'Weapon - Fireball'  
 class fireball(weapon):
     def __init__(self):
-        super().__init__("Fireball", 15, 1)
+        super().__init__("Fireball", 15)
         self.size = 5
-        self.radius = 20
+        self.area = 20
         self.speed = 10
-        self.cd = 5000
+        self.cd = 500
         self.previous_time = pygame.time.get_ticks()
         self.projectiles = []
 
@@ -390,11 +416,11 @@ class fireball(weapon):
                     projectiles.remove(f)
                 if f.rect.collidelistall(enemies):
                     self.projectiles.remove(f)
-                    print("Explode!")
+                    # print("Explode!")
                     projectiles.remove(f)
-                    area = pygame.draw.circle(screen, (255, 100, 0), (x, y), self.radius)
+                    area = pygame.draw.circle(screen, (255, 100, 0), (x, y), self.area)
                     targets_index = area.collidelistall(enemies)
-                    print(targets_index)
+                    # print(targets_index)
                     try:
                         for target in targets_index:
                             enemies[target].health += -self.damage
@@ -409,10 +435,15 @@ class fireball(weapon):
             self.get_target()
             self.previous_time = current_time
 
+    def level_up(self):
+        super().level_up()
+        self.area *= 2
+
+
 'Weapon - Water Bolt'
 class water_bolt(weapon):
     def __init__(self):
-        super().__init__("Water Bolt", 10, 1)
+        super().__init__("Water Bolt", 10)
         self.bounces = 3
         self.speed = 10
         self.size = 4
@@ -484,7 +515,11 @@ class water_bolt(weapon):
             self.get_target()
             self.previous_time = current_time
 
-
+    def level_up(self):
+        super().level_up()
+        # self.speed *= 2
+        self.bounces += 1
+        self.cd *= 0.5
 
 
 '''Projectile'''
@@ -535,6 +570,10 @@ class projectile:
         #     projectiles.remove(self)
         self.rect.move_ip(self.movex, self.movey)
 
+
+weapons = [aura(), fireball(), water_bolt()]
+my_weapons = []
+
 def update_projectiles():
     try:
         for p in projectiles:
@@ -555,9 +594,9 @@ class exp:
         self.value = value
         
     def check_pickup(self):
-        if self.rect.colliderect(player):
+        if self.rect.colliderect(player.rect):
             player.exp += self.value
-            print(f'You have {player.exp} exp')
+            # print(f'You have {player.exp} exp')
             experience.remove(self)
             return True
 
@@ -585,12 +624,12 @@ class exp:
                 movey = -movey
             self.rect.move_ip(movex, movey)
             
-            self.check_pickup
         else:
             return
 
 def update_experience():
     try:
+        # print(experience)
         for xp in experience:
             collected = xp.check_pickup()
             if not collected:
@@ -601,10 +640,11 @@ def update_experience():
 
 player = player()
 enemies = []
-enemies.append(enemy())
+# enemies.append(enemy())
 projectiles = []
 experience = []
-
+# upgrades = []
+# upgrades_surface = {}
 
 #clock
 clock = pygame.time.Clock()
@@ -629,7 +669,10 @@ blue = (0,0,255)
 font = pygame.font.SysFont('timesnewroman', 16)
 game_time = make_time()
 
-a = water_bolt()
+# a = water_bolt()
+
+# c = aura()
+random.choice(weapons).level_up()
 
 while running and paused is False:
     clock.tick(FPS)
@@ -661,7 +704,7 @@ while running and paused is False:
                 running = False
                 pygame.quit()
             if event.key == pygame.K_LSHIFT:
-                print("Dash")
+                # print("Dash")
                 if current_time - player.dash_previous_time >= player.dash_cd:
                     player.move(player.direction, speed = 50)
                     player.dash_previous_time = current_time
@@ -710,5 +753,25 @@ while running and paused is False:
                 if event.key == pygame.K_q:
                     running = False
                     pygame.quit()
+
+    while player.choose_upgrade:
+        for upgrade, [text, text_rect] in player.upgrades_surface.items():
+            screen.blit(text, text_rect)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+            if event.type == pygame.KEYDOWN: 
+                if event.key == pygame.K_q:
+                    running = False
+                    pygame.quit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                for upgrade, [text, text_rect] in player.upgrades_surface.items():
+                    if text_rect.collidepoint(x, y):
+                        upgrade.level_up()
+                        print(f'{upgrade.name}: Level {upgrade.level}')
+                        player.choose_upgrade = False
+        pygame.display.update()
 
     pygame.display.update()
