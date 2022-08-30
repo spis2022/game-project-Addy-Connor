@@ -230,7 +230,7 @@ class player:
         
     
     
-def draw_player():
+def update_player():
     player.health_bar()
     pygame.draw.rect(screen, (255, 0, 0), player.red_health_bar)
     pygame.draw.rect(screen, (0, 200, 0), player.green_health_bar)
@@ -400,7 +400,7 @@ class projectile:
             projectiles.remove(self)
         self.rect.move_ip(self.movex, self.movey)
 
-def draw_projectiles():
+def update_projectiles():
     try:
         for p in projectiles:
             p.move()
@@ -549,9 +549,9 @@ while running and paused is False:
     
     use_weapons()
     update_experience()
-    draw_player()
+    update_player()
     update_enemies()
-    draw_projectiles()
+    update_projectiles()
     draw_time()
 
     while paused is True:
