@@ -2,6 +2,9 @@
 Game project by Addy and Connor in an attempt to create a survivor rogue-like game
 
 WASD Movement Keys
+
 Left Shift to dash
+
+Use the mouse to aim the fireball and chain lightning
+
 q to quit game
-use the mouse to aim the fireball
