@@ -7,4 +7,6 @@ Left Shift to dash
 
 Use the mouse to aim the fireball and chain lightning
 
+p to pause
+
 q to quit game
