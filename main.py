@@ -11,8 +11,9 @@ pygame.init()
 '''Imports from assets'''
 
 background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
-enemy_image = pygame.image.load(os.path.join("assets", "enemy.png"))
-player_image = pygame.image.load(os.path.join("assets", "wizard_sprite.png"))
+enemy_image = pygame.image.load(os.path.join("assets", "enemy40x40.png"))
+player_image_left = pygame.image.load(os.path.join("assets", "wizard-left.png"))
+player_image_right = pygame.image.load(os.path.join("assets", "wizard-right.png"))
 
 '''Background'''
 class background:
@@ -242,10 +243,7 @@ class player:
                 text = font.render(upgrade.name, True, (255, 255, 255), (50, 50, 50))
                 text_rect = text.get_rect()
                 text_rect.center = (screen_length // 3 * i + screen_length // 6, centery)
-                self.upgrades_surface[upgrade] = [text, text_rect]
-                
-        
-    
+                self.upgrades_surface[upgrade] = [text, text_rect] 
     
 def update_player():
     player.health_bar()
@@ -256,14 +254,18 @@ def update_player():
     pygame.draw.rect(screen, (100, 100, 100), player.empty_exp)
     pygame.draw.rect(screen, (0, 50, 255), player.full_exp)
     # pygame.draw.rect(screen, (0, 255, 0), player.rect)
-    screen.blit(player_image, player.rect.topleft)
+    if previous_direction == "right":
+        screen.blit(player_image_right, player.rect.topleft)
+    if previous_direction == "left":
+        screen.blit(player_image_left, player.rect.topleft)
+
 
 '''Enemy'''
 class enemy:
     def __init__(self, damage = 1, health = 20, speed = 2, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
-        sizex = 10
-        sizey = 10
+        sizex = 40
+        sizey = 40
         angle = random.random() * (math.pi*2)
         # x distance and y distance -> diagonal/hypotenuse from center
         x = centerx + int(distance * math.cos(angle))
@@ -319,11 +321,15 @@ class enemy:
             experience.append(exp(x, y, value = 10, size = 8))
             # print(experience)
 
+    def take_damage(self, damage):
+        self.health += -damage
+
+
 def spawn_enemy():
     global number_of_enemies
     for i in range(number_of_enemies):
-        enemies.append(enemy(speed=number_of_enemies))
-    number_of_enemies += 1
+        enemies.append(enemy())
+    number_of_enemies += 3
 
 def update_enemies():
     try:
@@ -361,7 +367,7 @@ class aura(weapon):
     def use_weapon(self):
         # screen.fill((150, 50, 50, 60), pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size), pygame.SRCALPHA)
         pygame.draw.circle(trans_surface, (150, 0, 50, 25), (centerx, centery), self.size)
-        screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        # screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
         # pygame.draw.circle(screen, (255, 255, 255), self.circle)
         targets_index = self.circle.collidelistall(enemies)
         targets_enemies = []
@@ -381,7 +387,7 @@ class aura(weapon):
                 if target in self.immune:
                     pass
                 else:
-                    target.health += -self.damage
+                    target.take_damage(self.damage)
                     self.immune[target] = current_time
         except:
             pass
@@ -423,7 +429,7 @@ class fireball(weapon):
                     # print(targets_index)
                     try:
                         for target in targets_index:
-                            enemies[target].health += -self.damage
+                            enemies[target].take_damage(self.damage)
                     except:
                         pass   
         except:
@@ -502,7 +508,7 @@ class water_bolt(weapon):
                         pass
                     try:
                         for target in targets_enemies:
-                            target.health += -self.damage
+                            target.take_damage(self.damage)
                     except:
                         pass 
         except:
@@ -521,6 +527,77 @@ class water_bolt(weapon):
         self.bounces += 1
         self.cd *= 0.5
 
+class chain_lightning(weapon):
+    def __init__(self):
+        super().__init__("Chain Lightning", 10)
+        self.chains = 5
+        self.speed = 20
+        self.size = 5
+        self.chain_radius = 100
+        self.previous_time = pygame.time.get_ticks()
+        self.cd = 1000
+        self.projectiles = []
+
+    def get_target(self):
+        try:
+            # targetx, targety = random.choice(enemies).rect.center
+            targetx, targety = pygame.mouse.get_pos()
+            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (255, 255, 0)))
+            self.projectiles[-1].chain = 0
+        except:
+            pass
+
+    def chain(self):
+        try:
+            for l in self.projectiles:
+                x, y = l.rect.center
+                if x >= screen_length or x < 0:
+                    self.projectiles.remove(l)
+                    projectiles.remove(l)
+                    pass
+                if y > screen_height or y < 0:
+                    self.projectiles.remove(l)
+                    projectiles.remove(l)
+                    pass
+                if l.rect.collidelistall(enemies):
+                    target = enemies[l.rect.collidelist(enemies)]
+                    target.take_damage(self.damage)
+                    l.chain += 1
+                    # print("Hit enemy")
+                    if l.chain > self.chains:
+                        print("Removed lightning")
+                        self.projectiles.remove(l)
+                        projectiles.remove(l)
+                    else:
+                        x, y = l.rect.center
+                        chain_area = pygame.draw.circle(trans_surface, (255, 255, 0, 100), (x, y), self.chain_radius)
+                        possible_chain = chain_area.collidelistall(enemies)
+                        # possible_chain = random.randrange(len(enemies))
+                        possible_chain.remove(enemies.index(target))
+                        try:
+                            # chain = random.choice(enemies)
+                            # targetx, targety = chain.rect.center
+                            chain = random.choice(possible_chain)
+                            targetx, targety = enemies[chain].rect.center
+                            l.target(targetx, targety)    
+                            print("Chained")      
+                        except:
+                            print("No target")
+                            self.projectiles.remove(l)
+                            projectiles.remove(l)       
+        except:
+            pass
+
+    def use_weapon(self):
+        # print("Using Weapon")
+        if current_time - self.previous_time >= self.cd:
+            self.get_target()
+            self.previous_time = current_time
+        self.chain()
+        
+    def level_up(self):
+        super().level_up()
+        self.chains += 1
 
 '''Projectile'''
 class projectile:
@@ -529,13 +606,15 @@ class projectile:
         x, y = player.rect.center
         self.size = size
         self.speed = speed
-        # self.damage = damage
         self.color = color
         self.rect = pygame.Rect(x, y, self.size, self.size)
         self.rect.center = (x, y)
         projectiles.append(self)
+        self.target(targetx, targety)
 
+    def target(self, targetx, targety):
         '''Calculate angle to move'''
+        x, y = player.rect.center
         distancex = x - targetx 
         distancey = y - targety 
         try:
@@ -546,32 +625,18 @@ class projectile:
                 angle = -math.pi/2
             elif distancey < 0:
                 angle = math.pi/2
-        self.movex = int(speed * math.cos(angle))
-        self.movey = int(speed * math.sin(angle))
+        self.movex = int(self.speed * math.cos(angle))
+        self.movey = int(self.speed * math.sin(angle))
         if x > targetx:
             self.movex = -self.movex
             self.movey = -self.movey  
 
     def move(self):
         '''Moves projectile'''
-        # try:
-        #     for enemy in enemies:
-        #         if self.rect.colliderect(enemy):
-        #             projectiles.remove(self)
-        #             enemy.health += -self.damage
-        #             # print(f'Enemy { enemy.name } took { self.damage } damage. It has { enemy.health } health left')
-        # except:
-        #     pass
-
-        # x, y = self.rect.center
-        # if x > screen_length or x < 0:
-        #     projectiles.remove(self)
-        # if y > screen_height or y < 0:
-        #     projectiles.remove(self)
         self.rect.move_ip(self.movex, self.movey)
 
 
-weapons = [aura(), fireball(), water_bolt()]
+weapons = [aura(), fireball(), water_bolt(), chain_lightning()]
 my_weapons = []
 
 def update_projectiles():
@@ -589,7 +654,7 @@ def use_weapons():
         
 '''Experience'''
 class exp:
-    def __init__(self, locationx, locationy, value = 1, size = 4):
+    def __init__(self, locationx, locationy, value = 1, size = 20):
         self.rect = pygame.Rect(locationx, locationy, size, size)
         self.value = value
         
@@ -627,10 +692,17 @@ class exp:
         else:
             return
 
+    def combine_exp(self):
+        if self.rect.collidelistall(experience):
+            target = experience[self.rect.collidelist(experience)]
+            self.value += target.value
+            experience.remove(target)
+
 def update_experience():
     try:
         # print(experience)
         for xp in experience:
+            xp.combine_exp()
             collected = xp.check_pickup()
             if not collected:
                 xp.pickup_range()
@@ -640,7 +712,7 @@ def update_experience():
 
 player = player()
 enemies = []
-# enemies.append(enemy())
+enemies.append(enemy())
 projectiles = []
 experience = []
 # upgrades = []
@@ -669,10 +741,11 @@ blue = (0,0,255)
 font = pygame.font.SysFont('timesnewroman', 16)
 game_time = make_time()
 
-# a = water_bolt()
+weapons[3].level_up()
+print(my_weapons)
+# random.choice(weapons).level_up()
 
-# c = aura()
-random.choice(weapons).level_up()
+previous_direction = "right"
 
 while running and paused is False:
     clock.tick(FPS)
@@ -687,12 +760,14 @@ while running and paused is False:
         if keys[pygame.K_a]:
             player.move("left")
             player.direction = "left"
+            previous_direction = "left"
         if keys[pygame.K_s]:
             player.move("down")
             player.direction = "down"
         if keys[pygame.K_d]:
             player.move("right")
             player.direction = "right"
+            previous_direction = "right"
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
@@ -736,6 +811,8 @@ while running and paused is False:
     draw_background()
     
     use_weapons()
+    screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+
     update_experience()
     update_player()
     update_enemies()
