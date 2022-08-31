@@ -6,10 +6,12 @@ import random
 import math
 pygame.init()
 
-
+# Music
+pygame.mixer.init()
+pygame.mixer.music.load(os.path.join("assets","music.ogg"))
+pygame.mixer.music.play(-1)
 
 '''Imports from assets'''
-
 # background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
 background_image = pygame.image.load(os.path.join("assets","backgrounddetailed1.png"))
 enemy_image = pygame.image.load(os.path.join("assets", "enemy40x40.png"))
@@ -17,7 +19,7 @@ player_image_left = pygame.image.load(os.path.join("assets", "wizard-left.png"))
 player_image_right = pygame.image.load(os.path.join("assets", "wizard-right.png"))
 experience_image = pygame.image.load(os.path.join("assets", "exp20x20.png"))
 explosion_image = pygame.image.load(os.path.join("assets","croppedExplosion.png"))
-final_boss_image = 
+final_boss_image = pygame.image.load(os.path.join("assets", "OwenBoss.png"))
 
 
 '''Background'''
@@ -254,10 +256,10 @@ def update_player():
 
 '''Enemy'''
 class enemy:
-    def __init__(self, damage = 1, health = 20, speed = 2, distance = random.randrange(centerx - 50, centerx)):
+    def __init__(self, damage = 1, health = 20, speed = 2, size = 40, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
-        sizex = 40
-        sizey = 40
+        sizex = size
+        sizey = size
         angle = random.random() * (math.pi*2)
         # x distance and y distance -> diagonal/hypotenuse from center
         x = centerx + int(distance * math.cos(angle))
@@ -314,12 +316,17 @@ class enemy:
             enemies.remove(self)
             del self
 
-
     def take_damage(self, damage):
         self.health += -damage
         # print("Took damage")
         self.damage_numbers_list.append(damage_numbers(self.rect.center, damage))
         # print("Made damage number")
+
+class boss(enemy):
+    def __init__(self):
+        super().__init__()
+
+
 
 class damage_numbers:
     def __init__(self, location, damage):
@@ -742,7 +749,7 @@ number_of_enemies = 1
 spawn_enemy_event = pygame.USEREVENT + 1
 enemy_time = pygame.time.get_ticks()
 projectile_time = pygame.time.get_ticks()
-spawn_rate = 3000
+spawn_rate = 10000000000
 exp_limit = 50
 
 # Pause screen + Timer
@@ -788,6 +795,7 @@ while running and paused is False:
         if event.type == pygame.KEYDOWN: 
             if event.key == pygame.K_p:
                 paused = True
+                pygame.mixer.music.pause()
             if event.key == pygame.K_q:
                 running = False
                 pygame.quit()
@@ -808,6 +816,9 @@ while running and paused is False:
         seconds += 1
         previous_second = pygame.time.get_ticks()
         game_time = make_time()
+    
+    # if minutes == 1:
+    #     enemies.append(enemy(4, 500, 4, size = 80))
 
     
     update_background()
@@ -820,8 +831,6 @@ while running and paused is False:
     update_player()
     draw_time()
 
-
-
     while paused is True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -830,6 +839,7 @@ while running and paused is False:
             if event.type == pygame.KEYDOWN: 
                 if event.key == pygame.K_p:
                     paused = False
+                    pygame.mixer.music.unpause()
                 if event.key == pygame.K_q:
                     running = False
                     pygame.quit()
