@@ -11,11 +11,14 @@ pygame.init()
 '''Imports from assets'''
 
 # background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
-background_image = pygame.image.load(os.path.join("assets","grass-86.jpg"))
+background_image = pygame.image.load(os.path.join("assets","backgrounddetailed1.png"))
 enemy_image = pygame.image.load(os.path.join("assets", "enemy40x40.png"))
 player_image_left = pygame.image.load(os.path.join("assets", "wizard-left.png"))
 player_image_right = pygame.image.load(os.path.join("assets", "wizard-right.png"))
 experience_image = pygame.image.load(os.path.join("assets", "exp20x20.png"))
+explosion_image = pygame.image.load(os.path.join("assets","croppedExplosion.png"))
+final_boss_image = 
+
 
 '''Background'''
 class background:
@@ -35,6 +38,7 @@ screen_height = 720
 dim_field = (screen_length, screen_height)
 screen = pygame.display.set_mode(dim_field)
 (centerx, centery) = screen.get_rect().center
+screen.set_colorkey((0, 0, 0))
 
 # Makes transparent background surface
 background_rect = pygame.Rect(0, 0, screen_length, screen_height)
@@ -136,6 +140,9 @@ def move_everything(movex, movey):
     try:
         for enemy in enemies:
             enemy.rect.move_ip(movex, movey)
+            for d in enemy.damage_numbers_list:
+                # print("Moving")
+                d.textRectangle.move_ip(movex, movey)
     except:
         pass
     try:
@@ -179,7 +186,7 @@ class player:
         self.health_bar_sizex = self.sizex * 2
         self.health_bar_sizey = 3
         self.health_bar_x = centerx - (self.health_bar_sizex // 2)
-        self.health_bar_y = centery - 12
+        self.health_bar_y = centery - 25
         self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
         self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
 
@@ -256,6 +263,7 @@ class enemy:
         x = centerx + int(distance * math.cos(angle))
         y = centery + int(distance * math.sin(angle))
         self.rect = pygame.Rect(x, y, sizex, sizey)
+        self.damage_numbers_list = []
 
         '''Set enemy attributes'''
         self.damage = damage
@@ -300,16 +308,31 @@ class enemy:
 
     def check_health(self):
         if self.health <= 0:
-            # print("Dead")
-            enemies.remove(self)
+            # print("Dead") 
             x, y = self.rect.center
             experience.append(exp(x, y, value = 10))
-            # print("Spawned exp")
-            # print(experience)
-            # print(experience)
+            enemies.remove(self)
+            del self
+
 
     def take_damage(self, damage):
         self.health += -damage
+        # print("Took damage")
+        self.damage_numbers_list.append(damage_numbers(self.rect.center, damage))
+        # print("Made damage number")
+
+class damage_numbers:
+    def __init__(self, location, damage):
+        self.text = font.render(str(damage), True, (255, 255, 255), (0, 0, 0, 0))
+        self.textRectangle = self.text.get_rect()
+        x, y = location
+        self.textRectangle.center = (x, y - 25)
+        self.previous_time = pygame.time.get_ticks()
+
+    def move(self):
+        # print("Moved damage number")
+        screen.blit(self.text, self.textRectangle)
+        self.textRectangle.move_ip(0, -1)
 
 
 def spawn_enemy():
@@ -319,13 +342,20 @@ def spawn_enemy():
     number_of_enemies += 3
 
 def update_enemies():
-    try:
-        for e in enemies:
+    for e in enemies:
+        try:
             e.move()
             e.check_health()
+            for d in e.damage_numbers_list:
+                d.move()
+                if current_time - d.previous_time >= 1000:
+                    e.damage_numbers_list.remove(d)
+                    del d
             screen.blit(enemy_image, (e.rect.topleft))
-    except:
-        pass
+        except:
+            print("error")
+            pass
+
 
 
 '''Weapons'''
@@ -347,42 +377,34 @@ class aura(weapon):
     def __init__(self):
         super().__init__("Aura", 10)
         self.size = 100
-        self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
+        self.circle = pygame.draw.circle(screen, (50, 50, 50), (centerx, centery), self.size)
         self.cd = 1000
+        self.opacity = 100
         self.immune = {}
 
     def use_weapon(self):
-        # screen.fill((150, 50, 50, 60), pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size), pygame.SRCALPHA)
-        pygame.draw.circle(trans_surface, (150, 0, 50, 25), (centerx, centery), self.size)
-        # screen.blit(trans_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-        # pygame.draw.circle(screen, (255, 255, 255), self.circle)
+        pygame.draw.circle(trans_surface, (150, 0, 50, self.opacity), (centerx, centery), self.size)
         targets_index = self.circle.collidelistall(enemies)
         targets_enemies = []
-        try:
-            for index in targets_index:
-                targets_enemies.append(enemies[index])
-        except:
-            pass
+        for index in targets_index:
+            targets_enemies.append(enemies[index])
         try:
             for key, value in self.immune.items():
                 if current_time - value >= self.cd:
-                    del self.immune[key]
+                    self.immune.pop(key)
         except:
             pass
-        try:
-            for target in targets_enemies:
-                if target in self.immune:
-                    pass
-                else:
-                    target.take_damage(self.damage)
-                    self.immune[target] = current_time
-        except:
-            pass
+        for target in targets_enemies:
+            if target in self.immune:
+                pass
+            else:
+                target.take_damage(self.damage)
+                self.immune[target] = current_time
 
     def level_up(self):
         super().level_up()
         self.size *= 1.1
-        self.circle = pygame.draw.circle(screen, (50, 50, 50, 0.1), (centerx, centery), self.size)
+        self.circle = pygame.draw.circle(trans_surface, (50, 50, 50, self.opacity), (centerx, centery), self.size)
         
 
 'Weapon - Fireball'  
@@ -396,31 +418,36 @@ class fireball(weapon):
         self.previous_time = pygame.time.get_ticks()
         self.projectiles = []
 
+
     def get_target(self):
         targetx, targety = pygame.mouse.get_pos()
         self.projectiles.append(projectile(targetx, targety, size = self.size, speed = self.speed, color = (255, 100, 0)))
     
     def explode(self):
-        try:
-            for f in self.projectiles:
+        for f in self.projectiles:
+            try:
                 x, y = f.rect.center
                 if x > screen_length or x < 0 or y > screen_height or y < 0:
                     self.projectiles.remove(f)
                     projectiles.remove(f)
+                    del f
                 if f.rect.collidelistall(enemies):
                     self.projectiles.remove(f)
-                    # print("Explode!")
                     projectiles.remove(f)
-                    area = pygame.draw.circle(screen, (255, 100, 0), (x, y), self.area)
+                    del f
+                    area = pygame.draw.circle(trans_surface, (255, 100, 0, 0), (x, y), self.area)
+                    # print("Make area")
+                    # area_rect = pygame.Rect(x - self.area, y - self.area, self.area * 2, self.area * 2)
+                    explosion_scaled = pygame.transform.scale(explosion_image, area.size)
+                    # print("Make image")
+                    screen.blit(explosion_scaled, area.topleft)
                     targets_index = area.collidelistall(enemies)
-                    # print(targets_index)
-                    try:
-                        for target in targets_index:
-                            enemies[target].take_damage(self.damage)
-                    except:
-                        pass   
-        except:
-            pass
+                    for target in targets_index:
+                        enemies[target].take_damage(self.damage)
+            except:
+                # print("Error")
+                pass
+
 
     def use_weapon(self):
         self.explode()
@@ -430,7 +457,7 @@ class fireball(weapon):
 
     def level_up(self):
         super().level_up()
-        self.area *= 2
+        self.area *= 1.1
 
 
 'Weapon - Water Bolt'
@@ -453,53 +480,45 @@ class water_bolt(weapon):
             pass
 
     def bounce(self):
-        try:
-            for w in self.projectiles:
-                x, y = w.rect.center
-                if x >= screen_length:
-                    w.movex = -w.movex
-                    w.bounces += 1
-                    w.rect.right = screen_length
-                    pass
-                if x <= 0:
-                    w.movex = -w.movex
-                    w.bounces += 1
-                    w.rect.left = 0
-                    pass
-                if y >= screen_height:
-                    w.movey = -w.movey
-                    w.bounces +=1
-                    w.bottom = screen_height
-                    pass
-                if y <= 0:
-                    w.movey = -w.movey
-                    w.bounces +=1
-                    w.top = 0
-                    pass
-                if w.bounces > self.bounces:
-                    self.projectiles.remove(w)
-                    projectiles.remove(w)
-        except:
-            pass
+        for w in self.projectiles:
+            x, y = w.rect.center
+            if x >= screen_length:
+                w.movex = -w.movex
+                w.bounces += 1
+                w.rect.right = screen_length
+                pass
+            if x <= 0:
+                w.movex = -w.movex
+                w.bounces += 1
+                w.rect.left = 0
+                pass
+            if y >= screen_height:
+                w.movey = -w.movey
+                w.bounces +=1
+                w.bottom = screen_height
+                pass
+            if y <= 0:
+                w.movey = -w.movey
+                w.bounces +=1
+                w.top = 0
+                pass
+            if w.bounces > self.bounces:
+                self.projectiles.remove(w)
+                projectiles.remove(w)
+                del w
+
 
     def check_hit(self):
-        try:
-            for w in self.projectiles:
-                if w.rect.collidelistall(enemies):
-                    targets_index = w.rect.collidelistall(enemies)
-                    targets_enemies = []
-                    try:
-                        for index in targets_index:
-                            targets_enemies.append(enemies[index])
-                    except:
-                        pass
-                    try:
-                        for target in targets_enemies:
-                            target.take_damage(self.damage)
-                    except:
-                        pass 
-        except:
-            pass
+        for w in self.projectiles:
+            if w.rect.collidelistall(enemies):
+                targets_index = w.rect.collidelistall(enemies)
+                targets_enemies = []
+                for index in targets_index:
+                    targets_enemies.append(enemies[index])
+                for target in targets_enemies:
+                    target.take_damage(self.damage)
+
+
 
     def use_weapon(self):
         self.bounce()
@@ -511,8 +530,8 @@ class water_bolt(weapon):
     def level_up(self):
         super().level_up()
         # self.speed *= 2
-        self.bounces += 1
-        self.cd *= 0.5
+        # self.bounces += 1
+        self.cd *= 0.9
 
 class chain_lightning(weapon):
     def __init__(self):
@@ -535,48 +554,45 @@ class chain_lightning(weapon):
             pass
 
     def chain(self):
-        try:
-            for l in self.projectiles:
+        for l in self.projectiles:
+            try:
                 x, y = l.rect.center
                 if x >= screen_length or x < 0:
                     self.projectiles.remove(l)
                     projectiles.remove(l)
+                    del l
                     pass
                 if y > screen_height or y < 0:
                     self.projectiles.remove(l)
                     projectiles.remove(l)
+                    del l
                     pass
                 if l.rect.collidelistall(enemies):
                     target = enemies[l.rect.collidelist(enemies)]
                     target.take_damage(self.damage)
                     l.chain += 1
-                    # print("Hit enemy")
                     if l.chain > self.chains:
-                        # print("Removed lightning")
                         self.projectiles.remove(l)
                         projectiles.remove(l)
+                        del l
                     else:
                         x, y = l.rect.center
                         chain_area = pygame.draw.circle(trans_surface, (255, 255, 0, 0), (x, y), self.chain_radius)
                         possible_chain = chain_area.collidelistall(enemies)
-                        # possible_chain = random.randrange(len(enemies))
                         possible_chain.remove(enemies.index(target))
                         try:
-                            # chain = random.choice(enemies)
-                            # targetx, targety = chain.rect.center
                             chain = random.choice(possible_chain)
                             targetx, targety = enemies[chain].rect.center
                             l.target(targetx, targety)    
-                            # print("Chained")      
                         except:
-                            # print("No target")
                             self.projectiles.remove(l)
-                            projectiles.remove(l)       
-        except:
-            pass
+                            projectiles.remove(l)
+                            del l       
+            except:
+                pass
+
 
     def use_weapon(self):
-        # print("Using Weapon")
         if current_time - self.previous_time >= self.cd:
             self.get_target()
             self.previous_time = current_time
@@ -627,12 +643,9 @@ weapons = [aura(), fireball(), water_bolt(), chain_lightning()]
 my_weapons = []
 
 def update_projectiles():
-    try:
-        for p in projectiles:
-            p.move()
-            pygame.draw.rect(screen, p.color, p.rect)
-    except:
-        pass
+    for p in projectiles:
+        p.move()
+        pygame.draw.rect(screen, p.color, p.rect)
 
 def use_weapons():
     for w in my_weapons:
@@ -641,15 +654,22 @@ def use_weapons():
         
 '''Experience'''
 class exp:
-    def __init__(self, locationx, locationy, value = 1, size = 20):
+    def __init__(self, locationx, locationy, value = 10, size = 20):
         self.rect = pygame.Rect(locationx, locationy, size, size)
         self.value = value
+        if len(experience) > exp_limit:
+            old_exp = experience[0]
+            self.value += old_exp.value
+            experience.remove(old_exp)
+            del old_exp
+
         
     def check_pickup(self):
         if self.rect.colliderect(player.rect):
             player.exp += self.value
             print(f'You have {player.exp} exp')
             experience.remove(self)
+            del self
             return True
 
     # def pickup_range(self):
@@ -686,35 +706,32 @@ class exp:
             for i in targets_index:
                 targets_rect.append(experience[i])
             targets_rect.remove(self)
-            self.value += targets_rect[0].value
-            experience.remove(targets_rect[0])
-            # print("Combined")
-            # print(f'New value: {self.value}')
+            targets_rect[0].value += self.value
+            experience.remove(self)
+            del self
         except:
             pass
 
+
 def update_experience():
-    try:
-        for xp in experience:
-            try:
-                xp.combine_exp()
-                collected = xp.check_pickup()
-                # if not collected:
-                #     xp.pickup_range()
-                # pygame.draw.rect(screen, (0, 100, 200), xp)
-                screen.blit(experience_image, xp.rect.topleft)
-            except:
-                pass
-    except:
-        pass
+    for xp in experience:
+        try:
+            xp.combine_exp()
+            collected = xp.check_pickup()
+            # if not collected:
+            #     xp.pickup_range()
+            # pygame.draw.rect(screen, (0, 100, 200), xp)
+            screen.blit(experience_image, xp.rect.topleft)
+        except:
+            pass
+
 
 player = player()
 enemies = []
 enemies.append(enemy())
 projectiles = []
 experience = []
-# upgrades = []
-# upgrades_surface = {}
+
 
 #clock
 clock = pygame.time.Clock()
@@ -725,9 +742,8 @@ number_of_enemies = 1
 spawn_enemy_event = pygame.USEREVENT + 1
 enemy_time = pygame.time.get_ticks()
 projectile_time = pygame.time.get_ticks()
-spawn_rate = 5000
-fire_rate = 1000
-multi_shot = 5
+spawn_rate = 3000
+exp_limit = 50
 
 # Pause screen + Timer
 paused = False
@@ -739,8 +755,8 @@ blue = (0,0,255)
 font = pygame.font.SysFont('timesnewroman', 16)
 game_time = make_time()
 
-# weapons[3].level_up()
-random.choice(weapons).level_up()
+weapons[1].level_up()
+# random.choice(weapons).level_up()
 
 previous_direction = "right"
 
@@ -797,12 +813,13 @@ while running and paused is False:
     update_background()
     draw_background() 
     use_weapons()
-    update_experience()
-    update_player()
     update_enemies()
-    update_projectiles()
-    draw_time()
     screen.blit(trans_surface, (0, 0))
+    update_experience()
+    update_projectiles()
+    update_player()
+    draw_time()
+
 
 
     while paused is True:
