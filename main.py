@@ -24,7 +24,7 @@ final_boss_image = pygame.image.load(os.path.join("assets", "OwenBoss.png"))
 
 
 '''Background'''
-class background:
+class Background:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, image_width, image_height)
         self.x = x
@@ -63,7 +63,7 @@ for row in range(num_of_background_rows):
 # Filling background array with background values
 for row in range(num_of_background_rows):
     for column in range(num_of_background_columns):
-        background_array[row][column] = background(image_width * (column), image_height * (row))
+        background_array[row][column] = Background(image_width * (column), image_height * (row))
 
 last_row = num_of_background_rows - 1
 last_column = num_of_background_columns - 1
@@ -161,7 +161,7 @@ def move_everything(movex, movey):
 
 
 '''Player''' 
-class player:
+class Player:
     def __init__(self, health = 100, exp = 0):
         '''Create player rectangle and set it in the center'''
         self.sizex = 40
@@ -269,7 +269,7 @@ def update_player():
 
 
 '''Enemy'''
-class enemy:
+class Enemy:
     def __init__(self, damage = 1, health = 20, speed = 2, sizex = 40, sizey = 40, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
         sizex = sizex
@@ -318,22 +318,22 @@ class enemy:
         if self.health <= 0:
             # print("Dead") 
             x, y = self.rect.center
-            experience.append(exp(x, y, value = 10))
+            experience.append(Exp(x, y, value = 10))
             enemies.remove(self)
             del self
 
     def take_damage(self, damage):
         self.health += -damage
-        self.damage_numbers_list.append(damage_numbers(self.rect.center, damage))
+        self.damage_numbers_list.append(Damage_Numbers(self.rect.center, damage))
 
-class boss(enemy):
+class Boss(Enemy):
     def __init__(self):
         self.sizex = 200
         self.sizey = 160
         super().__init__(2, 1000, 4, self.sizex, self.sizey)
         self.sprite = pygame.transform.scale(final_boss_image, (self.sizex, self.sizey))
 
-class damage_numbers:
+class Damage_Numbers:
     def __init__(self, location, damage):
         self.text = font.render(str(damage), True, (255, 255, 255), (0, 0, 0, 0))
         self.textRectangle = self.text.get_rect()
@@ -350,7 +350,7 @@ class damage_numbers:
 def spawn_enemy():
     global number_of_enemies
     for i in range(number_of_enemies):
-        enemies.append(enemy())
+        enemies.append(Enemy())
     number_of_enemies += 3
 
 def update_enemies():
@@ -371,7 +371,7 @@ def update_enemies():
 
 
 '''Weapons'''
-class weapon:
+class Weapon:
     def __init__(self, name, damage, level = 0):
         # my_weapons.append(self)
         self.name = name
@@ -386,7 +386,7 @@ class weapon:
 
 
 'Weapon - Aura'
-class aura(weapon):
+class Aura(Weapon):
     def __init__(self):
         super().__init__("Aura", 10)
         self.size = 100
@@ -421,7 +421,7 @@ class aura(weapon):
         
 
 'Weapon - Fireball'  
-class fireball(weapon):
+class Fireball(Weapon):
     def __init__(self):
         super().__init__("Fireball", 15)
         self.size = 10
@@ -433,7 +433,7 @@ class fireball(weapon):
 
     def get_target(self):
         targetx, targety = pygame.mouse.get_pos()
-        self.projectiles.append(projectile(targetx, targety, size = self.size, speed = self.speed, color = (255, 100, 0)))
+        self.projectiles.append(Projectile(targetx, targety, size = self.size, speed = self.speed, color = (255, 100, 0)))
     
     def explode(self):
         for p in self.projectiles:
@@ -470,7 +470,7 @@ class fireball(weapon):
 
 
 'Weapon - Water Bolt'
-class water_bolt(weapon):
+class Water_Bolt(Weapon):
     def __init__(self):
         super().__init__("Water Bolt", 10)
         self.bounces = 3
@@ -481,8 +481,8 @@ class water_bolt(weapon):
 
     def get_target(self):
         try:
-            targetx, targety = random.choice(enemies).rect.center
-            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (0, 0, 255)))
+            targetx, targety = enemies[random.choice(background_rect.collidelistall(enemies))].rect.center
+            self.projectiles.append(Projectile(targetx, targety, self.size, self.speed, (0, 0, 255)))
             self.projectiles[-1].bounces = 0
         except:
             pass
@@ -540,7 +540,7 @@ class water_bolt(weapon):
         self.cd *= 0.9
 
 'Weapon - Chain Lightning'
-class chain_lightning(weapon):
+class Chain_Lightning(Weapon):
     def __init__(self):
         super().__init__("Chain Lightning", 10)
         self.chains = 5
@@ -554,7 +554,7 @@ class chain_lightning(weapon):
         try:
             # targetx, targety = random.choice(enemies).rect.center
             targetx, targety = pygame.mouse.get_pos()
-            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (255, 255, 0)))
+            self.projectiles.append(Projectile(targetx, targety, self.size, self.speed, (255, 255, 0)))
             self.projectiles[-1].chain = 0
         except:
             pass
@@ -608,7 +608,7 @@ class chain_lightning(weapon):
         self.chains += 1
 
 'Weapon - Magic Missile'
-class magic_missile(weapon):
+class Magic_Missile(Weapon):
     def __init__(self):
         super().__init__("Magic Missile", 2)
         self.cd = 1000
@@ -620,7 +620,7 @@ class magic_missile(weapon):
         try:
             # targetx, targety = random.choice(enemies).rect.center
             targetx, targety = pygame.mouse.get_pos()
-            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (62, 193, 222)))
+            self.projectiles.append(Projectile(targetx, targety, self.size, self.speed, (62, 193, 222)))
         except:
             print("Error")
             pass
@@ -647,7 +647,7 @@ class magic_missile(weapon):
         self.cd *= 0.8
 
 'Weapon - Void'
-class void(weapon):
+class Void(Weapon):
     def __init__(self):
         super().__init__("Void", 10)
         self.speed = 3
@@ -659,7 +659,7 @@ class void(weapon):
     def get_target(self):
         try:
             targetx, targety = random.choice(enemies).rect.center
-            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (56, 19, 55)))
+            self.projectiles.append(Projectile(targetx, targety, self.size, self.speed, (56, 19, 55)))
             self.projectiles[-1].immune = {}
         except:
             pass
@@ -700,7 +700,7 @@ class void(weapon):
         self.size += 1
 
 'Weapon - Thunderbolt'
-class thunderbolt(weapon):
+class Thunderbolt(Weapon):
     def __init__(self):
         super().__init__("Thunderbolt", 20)
         self.size = 50
@@ -708,12 +708,13 @@ class thunderbolt(weapon):
 
     def get_target(self):
         try:
-            target = random.choice(enemies)
-            x, y = target.rect.center
+            target = random.choice(background_rect.collidelistall(enemies))
+            x, y = enemies[target].rect.center
             area = pygame.draw.circle(trans_surface, (230, 235, 195, 160), (x, y), self.size)
             targets_index = area.collidelistall(enemies)
             for i in targets_index:
                 enemies[i].take_damage(self.damage)
+            return
         except:
             pass
 
@@ -728,7 +729,7 @@ class thunderbolt(weapon):
         self.size += 2
 
 '''Projectile'''
-class projectile:
+class Projectile:
     def __init__(self, targetx, targety, size = 5, speed = 10, color = (255, 255, 255)):
         '''Creates projectile on player'''
         x, y = player.rect.center
@@ -764,7 +765,15 @@ class projectile:
         self.rect.move_ip(self.movex, self.movey)
 
 
-weapons = [aura(), fireball(), water_bolt(), chain_lightning(), magic_missile(), void(), thunderbolt()]
+weapons = [
+    Aura(), 
+    Fireball(), 
+    Water_Bolt(), 
+    Chain_Lightning(), 
+    Magic_Missile(), 
+    Void(), 
+    Thunderbolt()
+    ]
 my_weapons = []
 
 def update_projectiles():
@@ -778,7 +787,7 @@ def use_weapons():
 
         
 '''Experience'''
-class exp:
+class Exp:
     def __init__(self, locationx, locationy, value = 10, size = 20):
         self.rect = pygame.Rect(locationx, locationy, size, size)
         self.value = value
@@ -851,9 +860,9 @@ def update_experience():
             pass
 
 
-player = player()
+player = Player()
 enemies = []
-enemies.append(enemy())
+enemies.append(Enemy())
 projectiles = []
 experience = []
 
@@ -948,7 +957,7 @@ while running and paused is False:
         seconds += 1
         previous_second = pygame.time.get_ticks()
         if seconds == 30:
-            enemies.append(boss())
+            enemies.append(Boss())
         game_time = make_time()
     
         
