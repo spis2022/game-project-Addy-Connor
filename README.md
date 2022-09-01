@@ -1,4 +1,5 @@
-# game-project-Addy-Connor
+# Wizard Survivors
+# By Addy and Connor
 Game project by Addy and Connor in an attempt to create a survivor rogue-like game
 
 WASD Movement Keys
