@@ -162,6 +162,7 @@ def move_everything(movex, movey):
 
 '''Player''' 
 class Player:
+    '''The user-controlled player'''
     def __init__(self, health = 100, exp = 0):
         '''Create player rectangle and set it in the center'''
         self.sizex = 40
@@ -270,6 +271,7 @@ def update_player():
 
 '''Enemy'''
 class Enemy:
+    '''The Enemy homes in on the player to attack'''
     def __init__(self, damage = 1, health = 20, speed = 2, sizex = 40, sizey = 40, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
         sizex = sizex
@@ -327,6 +329,7 @@ class Enemy:
         self.damage_numbers_list.append(Damage_Numbers(self.rect.center, damage))
 
 class Boss(Enemy):
+    '''An elite enemy that spawns at certain times'''
     def __init__(self):
         self.sizex = 200
         self.sizey = 160
@@ -334,6 +337,7 @@ class Boss(Enemy):
         self.sprite = pygame.transform.scale(final_boss_image, (self.sizex, self.sizey))
 
 class Damage_Numbers:
+    '''The numbers that float above an enemy's head upon taking damage'''
     def __init__(self, location, damage):
         self.text = font.render(str(damage), True, (255, 255, 255), (0, 0, 0, 0))
         self.textRectangle = self.text.get_rect()
@@ -372,6 +376,7 @@ def update_enemies():
 
 '''Weapons'''
 class Weapon:
+    '''Used by the player to defend themselves from the hoard of enemies'''
     def __init__(self, name, damage, level = 0):
         # my_weapons.append(self)
         self.name = name
@@ -387,6 +392,7 @@ class Weapon:
 
 'Weapon - Aura'
 class Aura(Weapon):
+    '''Surrounds the player with a damaging aura that hurts enemies that enter it's range'''
     def __init__(self):
         super().__init__("Aura", 10)
         self.size = 100
@@ -422,6 +428,7 @@ class Aura(Weapon):
 
 'Weapon - Fireball'  
 class Fireball(Weapon):
+    '''Shoots a fireball towards the mouse location, exploding on impact upon hitting an enemy'''
     def __init__(self):
         super().__init__("Fireball", 15)
         self.size = 10
@@ -471,6 +478,7 @@ class Fireball(Weapon):
 
 'Weapon - Water Bolt'
 class Water_Bolt(Weapon):
+    '''Shoots a water bolt towards a random enemy that bounces on the screen boundaries 3 times'''
     def __init__(self):
         super().__init__("Water Bolt", 10)
         self.bounces = 3
@@ -541,6 +549,7 @@ class Water_Bolt(Weapon):
 
 'Weapon - Chain Lightning'
 class Chain_Lightning(Weapon):
+    '''Shoots a lightning bolt towards the mouse which chains to other enemies in the vicinity'''
     def __init__(self):
         super().__init__("Chain Lightning", 10)
         self.chains = 5
@@ -609,6 +618,7 @@ class Chain_Lightning(Weapon):
 
 'Weapon - Magic Missile'
 class Magic_Missile(Weapon):
+    '''Shoots weak magic missiles rapidly towards the mouse location'''
     def __init__(self):
         super().__init__("Magic Missile", 2)
         self.cd = 1000
@@ -648,6 +658,7 @@ class Magic_Missile(Weapon):
 
 'Weapon - Void'
 class Void(Weapon):
+    '''Shoots a slow moving black hole towards a random enemy'''
     def __init__(self):
         super().__init__("Void", 10)
         self.speed = 3
@@ -701,6 +712,7 @@ class Void(Weapon):
 
 'Weapon - Thunderbolt'
 class Thunderbolt(Weapon):
+    '''Brings down a thunderbolt from the sky upon a random enemy'''
     def __init__(self):
         super().__init__("Thunderbolt", 20)
         self.size = 50
@@ -728,8 +740,17 @@ class Thunderbolt(Weapon):
         self.cd *= 0.75
         self.size += 2
 
+'Weapon - Whirlwind'
+class Whirlwind(Weapon):
+    '''Shoots a whirlwind at an enemy that knocks them back'''
+    def __init__(self):
+        super().__init__("Whirlwind", 8)
+        self.speed = 5
+        self.knockback = 10
+
 '''Projectile'''
 class Projectile:
+    '''A basic projectile used my many weapons with variable stats'''
     def __init__(self, targetx, targety, size = 5, speed = 10, color = (255, 255, 255)):
         '''Creates projectile on player'''
         x, y = player.rect.center
@@ -788,6 +809,7 @@ def use_weapons():
         
 '''Experience'''
 class Exp:
+    '''The essence of defeated enemies that you can collect to power yourself and your spells up'''
     def __init__(self, locationx, locationy, value = 10, size = 20):
         self.rect = pygame.Rect(locationx, locationy, size, size)
         self.value = value
