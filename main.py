@@ -382,6 +382,8 @@ class weapon:
         self.level += 1
         if self.level == 1:
             my_weapons.append(self)
+            self.previous_time = pygame.time.get_ticks
+
 
 'Weapon - Aura'
 class aura(weapon):
@@ -426,7 +428,6 @@ class fireball(weapon):
         self.area = 50
         self.speed = 10
         self.cd = 500
-        self.previous_time = pygame.time.get_ticks()
         self.projectiles = []
 
 
@@ -435,22 +436,19 @@ class fireball(weapon):
         self.projectiles.append(projectile(targetx, targety, size = self.size, speed = self.speed, color = (255, 100, 0)))
     
     def explode(self):
-        for f in self.projectiles:
+        for p in self.projectiles:
             try:
-                x, y = f.rect.center
+                x, y = p.rect.center
                 if x > screen_length or x < 0 or y > screen_height or y < 0:
-                    self.projectiles.remove(f)
-                    projectiles.remove(f)
-                    del f
-                if f.rect.collidelistall(enemies):
-                    self.projectiles.remove(f)
-                    projectiles.remove(f)
-                    del f
+                    self.projectiles.remove(p)
+                    projectiles.remove(p)
+                    del p
+                if p.rect.collidelistall(enemies):
+                    self.projectiles.remove(p)
+                    projectiles.remove(p)
+                    del p
                     area = pygame.draw.circle(trans_surface, (255, 100, 0, 0), (x, y), self.area)
-                    # print("Make area")
-                    # area_rect = pygame.Rect(x - self.area, y - self.area, self.area * 2, self.area * 2)
                     explosion_scaled = pygame.transform.scale(explosion_image, area.size)
-                    # print("Make image")
                     screen.blit(explosion_scaled, area.topleft)
                     targets_index = area.collidelistall(enemies)
                     for target in targets_index:
@@ -478,7 +476,6 @@ class water_bolt(weapon):
         self.bounces = 3
         self.speed = 10
         self.size = 10
-        self.previous_time = pygame.time.get_ticks()
         self.cd = 3000
         self.projectiles = []
 
@@ -491,38 +488,38 @@ class water_bolt(weapon):
             pass
 
     def bounce(self):
-        for w in self.projectiles:
-            x, y = w.rect.center
+        for p in self.projectiles:
+            x, y = p.rect.center
             if x >= screen_length:
-                w.movex = -w.movex
-                w.bounces += 1
-                w.rect.right = screen_length
+                p.movex = -p.movex
+                p.bounces += 1
+                p.rect.right = screen_length
                 pass
             if x <= 0:
-                w.movex = -w.movex
-                w.bounces += 1
-                w.rect.left = 0
+                p.movex = -p.movex
+                p.bounces += 1
+                p.rect.left = 0
                 pass
             if y >= screen_height:
-                w.movey = -w.movey
-                w.bounces +=1
-                w.bottom = screen_height
+                p.movey = -p.movey
+                p.bounces +=1
+                p.bottom = screen_height
                 pass
             if y <= 0:
-                w.movey = -w.movey
-                w.bounces +=1
-                w.top = 0
+                p.movey = -p.movey
+                p.bounces +=1
+                p.top = 0
                 pass
-            if w.bounces > self.bounces:
-                self.projectiles.remove(w)
-                projectiles.remove(w)
-                del w
+            if p.bounces > self.bounces:
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
 
 
     def check_hit(self):
-        for w in self.projectiles:
-            if w.rect.collidelistall(enemies):
-                targets_index = w.rect.collidelistall(enemies)
+        for p in self.projectiles:
+            if p.rect.collidelistall(enemies):
+                targets_index = p.rect.collidelistall(enemies)
                 targets_enemies = []
                 for index in targets_index:
                     targets_enemies.append(enemies[index])
@@ -550,7 +547,6 @@ class chain_lightning(weapon):
         self.speed = 40
         self.size = 10
         self.chain_radius = 100
-        self.previous_time = pygame.time.get_ticks()
         self.cd = 1000
         self.projectiles = []
 
@@ -564,40 +560,40 @@ class chain_lightning(weapon):
             pass
 
     def chain(self):
-        for l in self.projectiles:
+        for p in self.projectiles:
             try:
-                x, y = l.rect.center
+                x, y = p.rect.center
                 if x >= screen_length or x < 0:
-                    self.projectiles.remove(l)
-                    projectiles.remove(l)
-                    del l
+                    self.projectiles.remove(p)
+                    projectiles.remove(p)
+                    del p
                     pass
                 if y > screen_height or y < 0:
-                    self.projectiles.remove(l)
-                    projectiles.remove(l)
-                    del l
+                    self.projectiles.remove(p)
+                    projectiles.remove(p)
+                    del p
                     pass
-                if l.rect.collidelistall(enemies):
-                    target = enemies[l.rect.collidelist(enemies)]
+                if p.rect.collidelistall(enemies):
+                    target = enemies[p.rect.collidelist(enemies)]
                     target.take_damage(self.damage)
-                    l.chain += 1
-                    if l.chain > self.chains:
-                        self.projectiles.remove(l)
-                        projectiles.remove(l)
-                        del l
+                    p.chain += 1
+                    if p.chain > self.chains:
+                        self.projectiles.remove(p)
+                        projectiles.remove(p)
+                        del p
                     else:
-                        x, y = l.rect.center
+                        x, y = p.rect.center
                         chain_area = pygame.draw.circle(trans_surface, (255, 255, 0, 0), (x, y), self.chain_radius)
                         possible_chain = chain_area.collidelistall(enemies)
                         possible_chain.remove(enemies.index(target))
                         try:
                             chain = random.choice(possible_chain)
                             targetx, targety = enemies[chain].rect.center
-                            l.target(targetx, targety)    
+                            p.target(targetx, targety)    
                         except:
-                            self.projectiles.remove(l)
-                            projectiles.remove(l)
-                            del l       
+                            self.projectiles.remove(p)
+                            projectiles.remove(p)
+                            del p
             except:
                 pass
 
@@ -615,7 +611,6 @@ class chain_lightning(weapon):
 class magic_missile(weapon):
     def __init__(self):
         super().__init__("Magic Missile", 2)
-        self.previous_time = pygame.time.get_ticks()
         self.cd = 1000
         self.size = 4
         self.speed = 15
@@ -631,13 +626,13 @@ class magic_missile(weapon):
             pass
 
     def check_hit(self):
-        for m in self.projectiles:
-            if m.rect.collidelistall(enemies):
-                target_index = m.rect.collidelist(enemies)
+        for p in self.projectiles:
+            if p.rect.collidelistall(enemies):
+                target_index = p.rect.collidelist(enemies)
                 enemies[target_index].take_damage(self.damage)
-                self.projectiles.remove(m)
-                projectiles.remove(m)
-                del m
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
 
     def use_weapon(self):
         self.check_hit()
@@ -650,6 +645,33 @@ class magic_missile(weapon):
     def level_up(self):
         super().level_up()
         self.cd *= 0.8
+
+'Weapon - Void'
+class void(weapon):
+    def __init__(self):
+        super().__init__("Void", 5)
+        self.speed = 5
+        self.size = 15
+        self.projectiles = []
+        self.cd = 6000
+
+    def get_target(self):
+        try:
+            targetx, targety = random.choice(enemies).rect.center
+            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (56, 19, 55)))
+            self.projectiles[-1].immune = {}
+        except:
+            pass
+
+    def check_hit(self):
+        for p in self.projectiles:
+            if p.rect.collidelistall(enemies):
+                target_index = p.rect.collidelist(enemies)
+                enemies[target_index].take_damage(self.damage)
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
+
 
 
 '''Projectile'''
