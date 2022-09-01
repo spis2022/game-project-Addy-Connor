@@ -262,6 +262,35 @@ class Player:
         else:
             self.health += amount
 
+    def suck_in_exp(self):
+        area = pygame.draw.circle(trans_surface, (255, 255, 255, 0), (self.x, self.y), self.pickup_range)
+        if area.collidelistall(experience):
+            targets_index = area.collidelistall(experience)
+            targets_exp = []
+            for i in targets_index:
+                targets_exp.append(experience[i])
+            for target in targets_exp:
+                targetx, targety = target.rect.center
+                distancex = self.x - targetx 
+                distancey = self.y - targety 
+                distance_sqrd = distancex ** 2 + distancey ** 2
+                speed = self.pickup_range ** 2 / distance_sqrd
+                try:
+                    angle = math.atan(distancey / distancex)
+                # If self.distancex is 0, then the angle is pi/2 or -pi/2
+                except ZeroDivisionError:
+                    if distancey >= 0:
+                        angle = -math.pi/2
+                    elif distancey < 0:
+                        angle = math.pi/2
+                movex = int(speed * math.cos(angle))
+                movey = int(speed * math.sin(angle))
+                if self.x < targetx:
+                    movex = -movex
+                    movey = -movey  
+                target.rect.move_ip(movex, movey)
+
+
 
 def update_player():
     player.health_bar()
@@ -272,6 +301,7 @@ def update_player():
         if current_time - d.previous_time >= 1000:
             player.healing_numbers_list.remove(d)
             del d
+    player.suck_in_exp()
     player.exp_bar()
     player.level_up()
     pygame.draw.rect(screen, (100, 100, 100), player.empty_exp)
