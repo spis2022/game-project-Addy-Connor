@@ -70,13 +70,6 @@ last_column = num_of_background_columns - 1
 
 
 def update_background():
-    
-    # for row in background_array:
-    #     for col in row:
-    #         print(f'{col.rect.topleft}\t', end='')
-    #     print()
-    # print('-------------------')
-    
     # Checks right edge
     if background_array[0][last_column].rect.right < screen_length:
         for i, list in enumerate(background_array):
@@ -1197,7 +1190,7 @@ while running:
         seconds += 1
         player.heal(player.health_regen)
         previous_second = pygame.time.get_ticks()
-        if seconds == 10:
+        if seconds == 60:
             enemies.append(Boss())
         game_time = make_time()
 
