@@ -529,8 +529,6 @@ class water_bolt(weapon):
                 for target in targets_enemies:
                     target.take_damage(self.damage)
 
-
-
     def use_weapon(self):
         self.bounce()
         self.check_hit()
@@ -544,6 +542,7 @@ class water_bolt(weapon):
         # self.bounces += 1
         self.cd *= 0.9
 
+'Weapon - Chain Lightning'
 class chain_lightning(weapon):
     def __init__(self):
         super().__init__("Chain Lightning", 10)
@@ -602,7 +601,6 @@ class chain_lightning(weapon):
             except:
                 pass
 
-
     def use_weapon(self):
         if current_time - self.previous_time >= self.cd:
             self.get_target()
@@ -612,6 +610,47 @@ class chain_lightning(weapon):
     def level_up(self):
         super().level_up()
         self.chains += 1
+
+'Weapon - Magic Missile'
+class magic_missile(weapon):
+    def __init__(self):
+        super().__init__("Magic Missile", 2)
+        self.previous_time = pygame.time.get_ticks()
+        self.cd = 1000
+        self.size = 4
+        self.speed = 15
+        self.projectiles = []
+
+    def get_target(self):
+        try:
+            # targetx, targety = random.choice(enemies).rect.center
+            targetx, targety = pygame.mouse.get_pos()
+            self.projectiles.append(projectile(targetx, targety, self.size, self.speed, (62, 193, 222)))
+        except:
+            print("Error")
+            pass
+
+    def check_hit(self):
+        for m in self.projectiles:
+            if m.rect.collidelistall(enemies):
+                target_index = m.rect.collidelist(enemies)
+                enemies[target_index].take_damage(self.damage)
+                self.projectiles.remove(m)
+                projectiles.remove(m)
+                del m
+
+    def use_weapon(self):
+        self.check_hit()
+        if current_time - self.previous_time >= self.cd:
+            # print("Used weapon")
+            self.get_target()
+            # print("Fired")
+            self.previous_time = current_time
+
+    def level_up(self):
+        super().level_up()
+        self.cd *= 0.8
+
 
 '''Projectile'''
 class projectile:
@@ -650,7 +689,7 @@ class projectile:
         self.rect.move_ip(self.movex, self.movey)
 
 
-weapons = [aura(), fireball(), water_bolt(), chain_lightning()]
+weapons = [aura(), fireball(), water_bolt(), chain_lightning(), magic_missile()]
 my_weapons = []
 
 def update_projectiles():
@@ -766,7 +805,9 @@ blue = (0,0,255)
 font = pygame.font.SysFont('timesnewroman', 16)
 game_time = make_time()
 
-weapons[1].level_up()
+weapons[-1].level_up()
+print(weapons[-1])
+print(my_weapons)
 # random.choice(weapons).level_up()
 
 previous_direction = "right"
