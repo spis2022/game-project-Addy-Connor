@@ -673,7 +673,7 @@ class Magic_Missile(Weapon):
 
 'Weapon - Void'
 class Void(Weapon):
-    '''Shoots a slow moving black hole towards a random enemy'''
+    '''Shoots a slow moving black hole that sucks in surrounding enemies towards a random enemy'''
     def __init__(self):
         super().__init__("Void", 10)
         self.speed = 3
@@ -681,10 +681,12 @@ class Void(Weapon):
         self.projectiles = []
         self.cd = 6000
         self.immune_time = 1000
+        self.suck_range = 100
+        self.suck_force = 10000
 
     def get_target(self):
         try:
-            targetx, targety = random.choice(enemies).rect.center
+            targetx, targety = enemies[random.choice(background_rect.collidelistall(enemies))].rect.center
             self.projectiles.append(Projectile(targetx, targety, self.size, self.speed, (56, 19, 55)))
             self.projectiles[-1].immune = {}
         except:
@@ -715,7 +717,46 @@ class Void(Weapon):
                         target.take_damage(self.damage)
                         p.immune[target] = current_time
 
+    def suck_in(self):
+        for p in self.projectiles:
+            x, y = p.rect.center
+            area = pygame.draw.circle(trans_surface, (50, 7, 61, 90), (x, y), self.suck_range)
+            if len(area.collidelistall(enemies)) > 1:
+                targets_index = area.collidelistall(enemies)
+                touching = p.rect.collidelistall(enemies)
+                for t in touching:
+                    try:
+                        targets_index.remove(t)
+                    except:
+                        pass
+                targets_enemies = []
+                for i in targets_index:
+                    targets_enemies.append(enemies[i])
+                for target in targets_enemies:
+                    targetx, targety = target.rect.center
+                    distancex = x - targetx 
+                    distancey = y - targety 
+                    distance_sqrd = distancex ** 2 + distancey ** 2
+                    speed = self.suck_force / distance_sqrd
+                    try:
+                        angle = math.atan(distancey / distancex)
+                    # If self.distancex is 0, then the angle is pi/2 or -pi/2
+                    except ZeroDivisionError:
+                        if distancey >= 0:
+                            angle = -math.pi/2
+                        elif distancey < 0:
+                            angle = math.pi/2
+                    movex = int(speed * math.cos(angle))
+                    movey = int(speed * math.sin(angle))
+                    if x < targetx:
+                        movex = -movex
+                        movey = -movey  
+                    target.rect.move_ip(movex, movey)
+                
+
+
     def use_weapon(self):
+        self.suck_in()
         self.check_hit()
         if current_time - self.previous_time >= self.cd:
             self.get_target()
@@ -1019,7 +1060,7 @@ moving_up = False
 moving_down = False
 
 # Initialize game with 1st weapon
-weapons[-1].level_up()
+weapons[5].level_up()
 # print(weapons[-1])
 # print(my_weapons)
 # random.choice(weapons).level_up()
