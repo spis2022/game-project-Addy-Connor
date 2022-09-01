@@ -747,6 +747,45 @@ class Whirlwind(Weapon):
         super().__init__("Whirlwind", 8)
         self.speed = 5
         self.knockback = 10
+        self.size = 10
+        self.cd = 3000
+        self.projectiles = []
+
+    def get_target(self):
+        try:
+            target = random.choice(background_rect.collidelistall(enemies))
+            x, y = enemies[target].rect.center
+            self.projectiles.append(Projectile(x, y, self.size, self.speed, (161, 197, 201)))
+        except:
+            pass
+
+    def check_hit(self):
+        for p in self.projectiles:
+            x, y = p.rect.center
+            if x > screen_length or x < 0 or y > screen_height or y < 0:
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
+            elif p.rect.collidelistall(enemies):
+                target_index = p.rect.collidelist(enemies)
+                enemies[target_index].rect.move_ip(p.movex * self.knockback, p.movey * self.knockback)
+                enemies[target_index].take_damage(self.damage)
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
+
+    def use_weapon(self):
+        self.check_hit()
+        if current_time - self.previous_time >= self.cd:
+            self.get_target()
+            self.previous_time = current_time
+
+    def level_up(self):
+        super().level_up()
+        self.size += 1
+        self.knockback += 1
+        self.speed += 1
+        self.cd *= 0.9
 
 '''Projectile'''
 class Projectile:
@@ -793,7 +832,8 @@ weapons = [
     Chain_Lightning(), 
     Magic_Missile(), 
     Void(), 
-    Thunderbolt()
+    Thunderbolt(),
+    Whirlwind()
     ]
 my_weapons = []
 
