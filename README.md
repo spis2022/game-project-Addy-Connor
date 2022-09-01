@@ -3,9 +3,7 @@ Game project by Addy and Connor in an attempt to create a survivor rogue-like ga
 
 WASD Movement Keys
 
-Left Shift to dash
-
-Use the mouse to aim the fireball and chain lightning
+Use the mouse to aim certain weapons
 
 p to pause
 
