@@ -845,6 +845,7 @@ class Thunderbolt(Weapon):
             pass
 
     def use_weapon(self):
+        # Uses weapon if the current time is past the cooldown
         if current_time - self.previous_time >= self.cd:
             self.get_target()
             self.previous_time = current_time
@@ -1037,33 +1038,6 @@ class Exp:
             del self
             return True
 
-    # def pickup_range(self):
-    #     x, y = self.rect.center
-    #     distancex = x - player.x 
-    #     distancey = y - player.y 
-    #     distance = math.sqrt(distancex ** 2 + distancey ** 2)
-    #     if distance < player.pickup_range:
-    #         move_dist = (player.pickup_range / distance) + 1
-    #         if move_dist > distance:
-    #             move_dist = distance
-    #         try:
-    #             angle = math.atan(distancey / distancex)
-    #         # If self.distancex is 0, then the angle is pi/2 or -pi/2
-    #         except ZeroDivisionError:
-    #             if distancey > 0:
-    #                 angle = -math.pi/2
-    #             elif distancey < 0:
-    #                 angle = math.pi/2
-    #         movex = int(move_dist * math.cos(angle))
-    #         movey = int(move_dist * math.sin(angle))
-    #         if self.x > player.x:
-    #             movex = -movex
-    #             movey = -movey
-    #         self.rect.move_ip(movex, movey)
-            
-    #     else:
-    #         return
-
     def combine_exp(self):
         try:
             targets_index = self.rect.collidelistall(experience)
@@ -1082,10 +1056,7 @@ def update_experience():
     for xp in experience:
         try:
             xp.combine_exp()
-            collected = xp.check_pickup()
-            # if not collected:
-            #     xp.pickup_range()
-            # pygame.draw.rect(screen, (0, 100, 200), xp)
+            xp.check_pickup()
             screen.blit(experience_image, xp.rect.topleft)
         except:
             pass
@@ -1130,10 +1101,10 @@ alive = True
 difficulty = 1
 
 # Initialize game with 1st weapon
-# weapons[7].level_up()
+weapons[1].level_up()
 # print(weapons[-1])
 # print(my_weapons)
-random.choice(weapons).level_up()
+# random.choice(weapons).level_up()
 
 
 
@@ -1180,6 +1151,7 @@ while running:
         player.move("down")
     if moving_right is True:
         player.move("right")
+
     # Spawns enemies
     if (current_time - enemy_time >= spawn_rate):
         spawn_enemy()
@@ -1190,6 +1162,7 @@ while running:
         seconds += 1
         player.heal(player.health_regen)
         previous_second = pygame.time.get_ticks()
+        # Spawns boss at certain time
         if seconds == 60:
             enemies.append(Boss())
         game_time = make_time()
