@@ -256,16 +256,17 @@ def update_player():
 
 '''Enemy'''
 class enemy:
-    def __init__(self, damage = 1, health = 20, speed = 2, size = 40, distance = random.randrange(centerx - 50, centerx)):
+    def __init__(self, damage = 1, health = 20, speed = 2, sizex = 40, sizey = 40, distance = random.randrange(centerx - 50, centerx)):
         '''Creates enemy at a random point around the player'''
-        sizex = size
-        sizey = size
+        sizex = sizex
+        sizey = sizey
         angle = random.random() * (math.pi*2)
         # x distance and y distance -> diagonal/hypotenuse from center
         x = centerx + int(distance * math.cos(angle))
         y = centery + int(distance * math.sin(angle))
         self.rect = pygame.Rect(x, y, sizex, sizey)
         self.damage_numbers_list = []
+        self.sprite = enemy_image
 
         '''Set enemy attributes'''
         self.damage = damage
@@ -324,7 +325,10 @@ class enemy:
 
 class boss(enemy):
     def __init__(self):
-        super().__init__()
+        self.sizex = 200
+        self.sizey = 160
+        super().__init__(2, 1000, 4, self.sizex, self.sizey)
+        self.sprite = pygame.transform.scale(final_boss_image, (self.sizex, self.sizey))
 
 
 
@@ -358,7 +362,7 @@ def update_enemies():
                 if current_time - d.previous_time >= 1000:
                     e.damage_numbers_list.remove(d)
                     del d
-            screen.blit(enemy_image, (e.rect.topleft))
+            screen.blit(e.sprite, (e.rect.topleft))
         except:
             print("error")
             pass
@@ -749,7 +753,7 @@ number_of_enemies = 1
 spawn_enemy_event = pygame.USEREVENT + 1
 enemy_time = pygame.time.get_ticks()
 projectile_time = pygame.time.get_ticks()
-spawn_rate = 10000000000
+spawn_rate = 3000
 exp_limit = 50
 
 # Pause screen + Timer
@@ -766,6 +770,10 @@ weapons[1].level_up()
 # random.choice(weapons).level_up()
 
 previous_direction = "right"
+moving_right = False
+moving_left = False
+moving_up = False
+moving_down = False
 
 while running and paused is False:
     clock.tick(FPS)
@@ -773,39 +781,43 @@ while running and paused is False:
     # print(pygame.time.get_ticks())
     for event in pygame.event.get():
         keys = pygame.key.get_pressed()
-    
-        if keys[pygame.K_w]:
-            player.move("up")
-            player.direction = "up"
-        if keys[pygame.K_a]:
-            player.move("left")
-            player.direction = "left"
-            previous_direction = "left"
-        if keys[pygame.K_s]:
-            player.move("down")
-            player.direction = "down"
-        if keys[pygame.K_d]:
-            player.move("right")
-            player.direction = "right"
-            previous_direction = "right"
         if event.type == pygame.QUIT:
             running = False
             pygame.quit()
-    # Quit game
         if event.type == pygame.KEYDOWN: 
+            if event.key == pygame.K_w:
+                moving_up = True
+            if event.key == pygame.K_a:
+                moving_left = True
+                previous_direction = "left"
+            if event.key == pygame.K_s:
+                moving_down = True
+            if event.key == pygame.K_d:
+                moving_right = True
+                previous_direction = "right"
             if event.key == pygame.K_p:
                 paused = True
                 pygame.mixer.music.pause()
             if event.key == pygame.K_q:
                 running = False
                 pygame.quit()
-            if event.key == pygame.K_LSHIFT:
-                # print("Dash")
-                if current_time - player.dash_previous_time >= player.dash_cd:
-                    player.move(player.direction, speed = 50)
-                    player.dash_previous_time = current_time
-                # player.direction
-                   
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_w:
+                moving_up = False
+            if event.key == pygame.K_a:
+                moving_left = False
+            if event.key == pygame.K_s:
+                moving_down = False
+            if event.key == pygame.K_d:
+                moving_right = False
+    if moving_up is True:
+        player.move("up")
+    if moving_left is True:
+        player.move("left")
+    if moving_down is True:
+        player.move("down")
+    if moving_right is True:
+        player.move("right")
     # Spawns enemies
     if (current_time - enemy_time >= spawn_rate):
         spawn_enemy()
@@ -815,10 +827,11 @@ while running and paused is False:
     if current_time - previous_second >= 1000:
         seconds += 1
         previous_second = pygame.time.get_ticks()
+        if seconds == 30:
+            enemies.append(boss())
         game_time = make_time()
     
-    # if minutes == 1:
-    #     enemies.append(enemy(4, 500, 4, size = 80))
+        
 
     
     update_background()
@@ -843,6 +856,15 @@ while running and paused is False:
                 if event.key == pygame.K_q:
                     running = False
                     pygame.quit()
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_w:
+                    moving_up = False
+                if event.key == pygame.K_a:
+                    moving_left = False
+                if event.key == pygame.K_s:
+                    moving_down = False
+                if event.key == pygame.K_d:
+                    moving_right = False
 
     while player.choose_upgrade:
         for upgrade, [text, text_rect] in player.upgrades_surface.items():
@@ -855,6 +877,15 @@ while running and paused is False:
                 if event.key == pygame.K_q:
                     running = False
                     pygame.quit()
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_w:
+                    moving_up = False
+                if event.key == pygame.K_a:
+                    moving_left = False
+                if event.key == pygame.K_s:
+                    moving_down = False
+                if event.key == pygame.K_d:
+                    moving_right = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
                 for upgrade, [text, text_rect] in player.upgrades_surface.items():
