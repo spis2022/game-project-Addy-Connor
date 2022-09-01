@@ -176,6 +176,7 @@ class Player:
         '''Set player attributes'''
         self.health = health
         self.max_health = health
+        self.health_regen = 1
         self.exp = exp
         self.pickup_range = 100
         self.level = 0
@@ -186,6 +187,7 @@ class Player:
         self.direction = "right"
 
 
+
         '''Health Bar'''       
         self.health_bar_sizex = self.sizex * 2
         self.health_bar_sizey = 3
@@ -193,7 +195,7 @@ class Player:
         self.health_bar_y = centery - 25
         self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
         self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
-        self.healing_numbers_list = []
+        self.damage_numbers_list = []
 
         '''EXP Bar'''       
         self.exp_sizex = screen_length
@@ -241,6 +243,7 @@ class Player:
                 self.upgrades_surface[upgrade] = [text, text_rect] 
     
     def take_damage(self, damage):
+        self.damage_numbers_list.append(Damage_Numbers(self.rect.center, damage, (173, 12, 12)))
         if player.health > 0:
             player.health += -damage
             # print(f'Health: {player.health}')
@@ -248,6 +251,7 @@ class Player:
             print("You are Dead")
             print(f'You lasted { game_time }')
             print("Final Weapons:")
+            alive = False
             for w in my_weapons:
                 print(f'{w.name}: Level {w.level}')
             pygame.time.wait(1000)
@@ -256,7 +260,7 @@ class Player:
             # pygame.quit()
 
     def heal(self, amount):
-        self.healing_numbers_list.append(Damage_Numbers(self.rect.center, amount, (28, 217, 60)))
+        self.damage_numbers_list.append(Damage_Numbers(self.rect.center, amount, (28, 217, 60)))
         if self.health + amount >= self.max_health:
             self.health = self.max_health
         else:
@@ -296,10 +300,10 @@ def update_player():
     player.health_bar()
     pygame.draw.rect(screen, (255, 0, 0), player.red_health_bar)
     pygame.draw.rect(screen, (0, 200, 0), player.green_health_bar)
-    for d in player.healing_numbers_list:
+    for d in player.damage_numbers_list:
         d.move()
         if current_time - d.previous_time >= 1000:
-            player.healing_numbers_list.remove(d)
+            player.damage_numbers_list.remove(d)
             del d
     player.suck_in_exp()
     player.exp_bar()
@@ -364,7 +368,7 @@ class Enemy:
         if self.health <= 0:
             # print("Dead") 
             x, y = self.rect.center
-            experience.append(Exp(x, y, value = 10))
+            experience.append(Exp(x, y, value = 2))
             enemies.remove(self)
             del self
 
@@ -377,8 +381,25 @@ class Boss(Enemy):
     def __init__(self):
         self.sizex = 200
         self.sizey = 160
-        super().__init__(2, 1000, 4, self.sizex, self.sizey)
+        self.max_health = 1000 + 100 * difficulty
+        super().__init__(2, self.max_health, 4, self.sizex, self.sizey)
         self.sprite = pygame.transform.scale(final_boss_image, (self.sizex, self.sizey))
+        self.health_bar_sizex = self.sizex * 2
+        self.health_bar_sizey = 4
+        self.health_bar_x = centerx - (self.health_bar_sizex // 2)
+        self.health_bar_y = centery - 25
+        self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
+        self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
+        
+
+    def health_bar(self):
+        x, y = self.rect.center
+        self.health_bar_x = x - (self.health_bar_sizex // 2)
+        self.health_bar_y = y - (self.sizey // 2 + 5)
+        self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)  
+        health_percent = self.health / self.max_health
+        self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, int(health_percent * self.health_bar_sizex), self.health_bar_sizey)
+
 
 class Damage_Numbers:
     '''The numbers that float above an enemy's head upon taking damage'''
@@ -398,9 +419,11 @@ class Damage_Numbers:
 
 def spawn_enemy():
     global number_of_enemies
+    global difficulty
     for i in range(number_of_enemies):
-        enemies.append(Enemy())
-    number_of_enemies += 3
+        enemies.append(Enemy(1, 10 + 2 * difficulty, 2))
+    number_of_enemies += 1
+    difficulty += 1
 
 def update_enemies():
     for e in enemies:
@@ -413,6 +436,11 @@ def update_enemies():
                     e.damage_numbers_list.remove(d)
                     del d
             screen.blit(e.sprite, (e.rect.topleft))
+            if type(e) == Boss:
+                e.health_bar()
+                pygame.draw.rect(screen, (255, 0, 0), e.red_health_bar)
+                pygame.draw.rect(screen, (0, 200, 0), e.green_health_bar)
+    
         except:
             print("error")
             pass
@@ -468,6 +496,7 @@ class Aura(Weapon):
     def level_up(self):
         super().level_up()
         self.size *= 1.1
+        self.damage += 2
         self.circle = pygame.draw.circle(trans_surface, (50, 50, 50, self.opacity), (centerx, centery), self.size)
         
 
@@ -479,7 +508,7 @@ class Fireball(Weapon):
         self.size = 10
         self.area = 50
         self.speed = 10
-        self.cd = 500
+        self.cd = 1000
         self.projectiles = []
 
 
@@ -519,15 +548,17 @@ class Fireball(Weapon):
     def level_up(self):
         super().level_up()
         self.area *= 1.1
+        self.damage += 4
+        self.cd *= 0.9
 
 
 'Weapon - Water Bolt'
 class Water_Bolt(Weapon):
     '''Shoots a water bolt towards a random enemy that bounces on the screen boundaries 3 times'''
     def __init__(self):
-        super().__init__("Water Bolt", 10)
+        super().__init__("Water Bolt", 15)
         self.bounces = 3
-        self.speed = 10
+        self.speed = 8
         self.size = 10
         self.cd = 3000
         self.projectiles = []
@@ -588,9 +619,9 @@ class Water_Bolt(Weapon):
 
     def level_up(self):
         super().level_up()
-        # self.speed *= 2
-        # self.bounces += 1
-        self.cd *= 0.9
+        self.cd *= 0.8
+        self.damage += 3
+        self.size += 1
 
 'Weapon - Chain Lightning'
 class Chain_Lightning(Weapon):
@@ -660,14 +691,16 @@ class Chain_Lightning(Weapon):
     def level_up(self):
         super().level_up()
         self.chains += 1
+        self.damage += 3
+        self.cd *= 0.8
 
 'Weapon - Magic Missile'
 class Magic_Missile(Weapon):
     '''Shoots weak magic missiles rapidly towards the mouse location'''
     def __init__(self):
-        super().__init__("Magic Missile", 2)
-        self.cd = 1000
-        self.size = 4
+        super().__init__("Magic Missile", 5)
+        self.cd = 500
+        self.size = 5
         self.speed = 15
         self.projectiles = []
 
@@ -699,7 +732,8 @@ class Magic_Missile(Weapon):
 
     def level_up(self):
         super().level_up()
-        self.cd *= 0.8
+        self.cd *= 0.75
+        self.damage += 1
 
 'Weapon - Void'
 class Void(Weapon):
@@ -712,7 +746,7 @@ class Void(Weapon):
         self.cd = 6000
         self.immune_time = 1000
         self.suck_range = 100
-        self.suck_force = 10000
+
 
     def get_target(self):
         try:
@@ -767,7 +801,7 @@ class Void(Weapon):
                     distancex = x - targetx 
                     distancey = y - targety 
                     distance_sqrd = distancex ** 2 + distancey ** 2
-                    speed = self.suck_force / distance_sqrd
+                    speed = self.suck_range ** 2 / distance_sqrd
                     try:
                         angle = math.atan(distancey / distancex)
                     # If self.distancex is 0, then the angle is pi/2 or -pi/2
@@ -795,12 +829,13 @@ class Void(Weapon):
     def level_up(self):
         super().level_up()
         self.size += 1
+        self.suck_range *= 1.1
 
 'Weapon - Thunderbolt'
 class Thunderbolt(Weapon):
     '''Brings down a thunderbolt from the sky upon a random enemy'''
     def __init__(self):
-        super().__init__("Thunderbolt", 20)
+        super().__init__("Thunderbolt", 40)
         self.size = 50
         self.cd = 4000
 
@@ -825,16 +860,17 @@ class Thunderbolt(Weapon):
         super().level_up()
         self.cd *= 0.75
         self.size += 2
+        self.damage += 5
 
 'Weapon - Whirlwind'
 class Whirlwind(Weapon):
     '''Shoots a whirlwind at an enemy that knocks them back'''
     def __init__(self):
         super().__init__("Whirlwind", 8)
-        self.speed = 5
+        self.speed = 8
         self.knockback = 10
         self.size = 10
-        self.cd = 3000
+        self.cd = 2000
         self.projectiles = []
 
     def get_target(self):
@@ -842,6 +878,7 @@ class Whirlwind(Weapon):
             target = random.choice(background_rect.collidelistall(enemies))
             x, y = enemies[target].rect.center
             self.projectiles.append(Projectile(x, y, self.size, self.speed, (161, 197, 201)))
+            self.projectiles[-1].immune = []
         except:
             pass
 
@@ -853,12 +890,18 @@ class Whirlwind(Weapon):
                 projectiles.remove(p)
                 del p
             elif p.rect.collidelistall(enemies):
-                target_index = p.rect.collidelist(enemies)
-                enemies[target_index].rect.move_ip(p.movex * self.knockback, p.movey * self.knockback)
-                enemies[target_index].take_damage(self.damage)
-                self.projectiles.remove(p)
-                projectiles.remove(p)
-                del p
+                targets_index = p.rect.collidelistall(enemies)
+                targets_enemies = []
+                for index in targets_index:
+                    targets_enemies.append(enemies[index])
+                for target in targets_enemies:
+                    if target in p.immune:
+                        pass
+                    else:
+                        target.rect.move_ip(p.movex * self.knockback, p.movey * self.knockback)
+                        target.take_damage(self.damage)
+                        p.immune.append(target)
+
 
     def use_weapon(self):
         self.check_hit()
@@ -868,20 +911,21 @@ class Whirlwind(Weapon):
 
     def level_up(self):
         super().level_up()
-        self.size += 1
+        self.size += 3
         self.knockback += 1
         self.speed += 1
-        self.cd *= 0.9
+        self.cd *= 0.75
+        self.damage += 2
 
 'Weapon - Life Drain'
 class Life_Drain(Weapon):
     '''Fires a life draining bat towards the mouse that heals you based on the damage done'''
     def __init__(self):
-        super().__init__("Life Drain", 7)
+        super().__init__("Life Drain", 10)
         self.drain_percent = 0.5
         self.speed = 10
         self.size = 6
-        self.cd = 4000
+        self.cd = 2000
         self.projectiles = []
 
     def get_target(self):
@@ -914,8 +958,9 @@ class Life_Drain(Weapon):
 
     def level_up(self):
         super().level_up()
-        self.drain_percent += 0.1
+        # self.drain_percent += 0.1
         self.cd *= 0.8
+        self.damage += 2
 
 '''Projectile'''
 class Projectile:
@@ -1088,16 +1133,18 @@ moving_right = False
 moving_left = False
 moving_up = False
 moving_down = False
+alive = True
+difficulty = 1
 
 # Initialize game with 1st weapon
-weapons[5].level_up()
+# weapons[7].level_up()
 # print(weapons[-1])
 # print(my_weapons)
-# random.choice(weapons).level_up()
+random.choice(weapons).level_up()
 
 
 
-while running and paused is False:
+while running:
     clock.tick(FPS)
     current_time = pygame.time.get_ticks()
     # print(pygame.time.get_ticks())
@@ -1148,12 +1195,11 @@ while running and paused is False:
     # Updates game time
     if current_time - previous_second >= 1000:
         seconds += 1
+        player.heal(player.health_regen)
         previous_second = pygame.time.get_ticks()
-        if seconds == 30:
+        if seconds == 10:
             enemies.append(Boss())
         game_time = make_time()
-    
-        
 
     pygame.draw.rect(trans_surface, (255, 255, 255, 0), background_rect)
     update_background()
@@ -1215,6 +1261,13 @@ while running and paused is False:
                         upgrade.level_up()
                         # print(f'{upgrade.name}: Level {upgrade.level}')
                         player.choose_upgrade = False
+        pygame.display.update()
+
+    while alive is False:
+        text = font.render('You are Dead', True, (255, 255, 255), (50, 50, 50))
+        text_rect = text.get_rect()
+        text_rect.center = (centerx, centery)
+        screen.blit(text, text_rect)
         pygame.display.update()
 
     pygame.display.update()
