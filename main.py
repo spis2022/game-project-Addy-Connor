@@ -193,6 +193,7 @@ class Player:
         self.health_bar_y = centery - 25
         self.red_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
         self.green_health_bar = pygame.Rect(self.health_bar_x, self.health_bar_y, self.health_bar_sizex, self.health_bar_sizey)
+        self.healing_numbers_list = []
 
         '''EXP Bar'''       
         self.exp_sizex = screen_length
@@ -254,10 +255,23 @@ class Player:
             running = False
             # pygame.quit()
 
+    def heal(self, amount):
+        self.healing_numbers_list.append(Damage_Numbers(self.rect.center, amount, (28, 217, 60)))
+        if self.health + amount >= self.max_health:
+            self.health = self.max_health
+        else:
+            self.health += amount
+
+
 def update_player():
     player.health_bar()
     pygame.draw.rect(screen, (255, 0, 0), player.red_health_bar)
     pygame.draw.rect(screen, (0, 200, 0), player.green_health_bar)
+    for d in player.healing_numbers_list:
+        d.move()
+        if current_time - d.previous_time >= 1000:
+            player.healing_numbers_list.remove(d)
+            del d
     player.exp_bar()
     player.level_up()
     pygame.draw.rect(screen, (100, 100, 100), player.empty_exp)
@@ -338,9 +352,10 @@ class Boss(Enemy):
 
 class Damage_Numbers:
     '''The numbers that float above an enemy's head upon taking damage'''
-    def __init__(self, location, damage):
-        self.text = font.render(str(damage), True, (255, 255, 255), (0, 0, 0, 0))
+    def __init__(self, location, damage, color = (255, 255, 255)):
+        self.text = font.render(str(damage), True, color, (0, 0, 0, 0))
         self.textRectangle = self.text.get_rect()
+        self.text.set_colorkey((0,0,0))
         x, y = location
         self.textRectangle.center = (x, y - 25)
         self.previous_time = pygame.time.get_ticks()
@@ -787,6 +802,50 @@ class Whirlwind(Weapon):
         self.speed += 1
         self.cd *= 0.9
 
+'Weapon - Life Drain'
+class Life_Drain(Weapon):
+    '''Fires a life draining bat towards the mouse that heals you based on the damage done'''
+    def __init__(self):
+        super().__init__("Life Drain", 7)
+        self.drain_percent = 0.5
+        self.speed = 10
+        self.size = 6
+        self.cd = 4000
+        self.projectiles = []
+
+    def get_target(self):
+        try:
+            targetx, targety = pygame.mouse.get_pos()
+            self.projectiles.append(Projectile(targetx, targety, self.size, self.speed, (140, 29, 1)))
+        except:
+            pass
+
+    def drain_life(self):
+        for p in self.projectiles:
+            x, y = p.rect.center
+            if x > screen_length or x < 0 or y > screen_height or y < 0:
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
+            elif p.rect.collidelistall(enemies):
+                target_index = p.rect.collidelist(enemies)
+                enemies[target_index].take_damage(self.damage)
+                player.heal(int(self.damage * self.drain_percent))
+                self.projectiles.remove(p)
+                projectiles.remove(p)
+                del p
+
+    def use_weapon(self):
+        self.drain_life()
+        if current_time - self.previous_time >= self.cd:
+            self.get_target()
+            self.previous_time = current_time
+
+    def level_up(self):
+        super().level_up()
+        self.drain_percent += 0.1
+        self.cd *= 0.8
+
 '''Projectile'''
 class Projectile:
     '''A basic projectile used my many weapons with variable stats'''
@@ -833,7 +892,8 @@ weapons = [
     Magic_Missile(), 
     Void(), 
     Thunderbolt(),
-    Whirlwind()
+    Whirlwind(),
+    Life_Drain()
     ]
 my_weapons = []
 
@@ -948,7 +1008,7 @@ seconds = 0
 previous_second = pygame.time.get_ticks()
 green = (0,255,0)
 blue = (0,0,255)
-font = pygame.font.SysFont('timesnewroman', 16)
+font = pygame.font.SysFont('Arial', 16, bold = True)
 game_time = make_time()
 
 # Starter variables
