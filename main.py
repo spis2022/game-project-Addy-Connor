@@ -11,6 +11,7 @@ pygame.init()
 pygame.mixer.init()
 pygame.mixer.music.load(os.path.join("assets","music.ogg"))
 pygame.mixer.music.play(-1)
+pygame.mixer.music.set_volume(.1)
 
 '''Imports from assets'''
 # background_image = pygame.image.load(os.path.join("assets","test_bg.png"))
